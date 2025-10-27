@@ -1,0 +1,18 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+' uncomment the following line and comment the first to use locally
+' !include C4_Context.puml
+
+
+Person(user, "User", "A person who analyzes cadastral zones")
+
+System(tg_bot, "TG bot", "Allows user to send queries")
+System(search_service, "Search service", "Search and analyse info in cadastral services")
+
+System_Ext(nspd, "NSPD", "Stores official info abot cadastral zones")
+
+
+Rel(user, tg_bot, "chats")
+Rel_R(tg_bot, search_service, "qeury by id")
+Rel(search_service, nspd, "qeury by id")
+@enduml

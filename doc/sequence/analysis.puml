@@ -1,0 +1,24 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor User
+
+== Analysis ==
+
+User -> TG_bot: Send zone ID
+TG_bot -> zones_service: Request analysis info
+zones_service -> NSPD_service: Search info by zone ID
+NSPD_service --> zones_service: Zone info
+zones_service --> TG_bot: Analysis info
+TG_bot --> User: Zone info
+
+alt user want to mark zone as favorite
+User -> TG_bot: Like zone ID
+TG_bot -> zones_service: Add zone id to favorite list
+zones_service --> TG_bot: OK
+TG_bot --> User: OK
+end
+
+@enduml

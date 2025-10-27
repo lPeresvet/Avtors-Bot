@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor User
+
+== Retrieve list of favourite zones ==
+
+User -> TG_bot: Send favourite zones request
+TG_bot -> search_service: Get favorite zones by tg id
+search_service --> TG_bot: List of zones
+TG_bot --> User: List of zones
+
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+start
+:Оператор получил кадастровый номер участка;
+if (Оператор зашел в чат бота впервые?) then (yes)
+  :Аутентификация (optional);
+else (no)
+endif
+:Оператор отправил номер участка на анализ;
+if (Участок подходит?) then (yes)
+  :Добавление в извранное;
+else (no)
+endif
+
+stop
+
+@enduml

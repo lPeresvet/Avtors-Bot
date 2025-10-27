@@ -1,0 +1,13 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor User
+== Start bot ==
+
+User -> TG_bot: Start Request (/start)
+TG_bot -> TG_bot: Auth user (optional)
+TG_bot --> User: Rules Response
+
+@enduml
