@@ -95,7 +95,7 @@ components:
         id:
           type: string
         propertyType:
-          $ref: '#/components/schemas/PrivacyType'
+          $ref: '#/components/schemas/PropertyType'
         rightType:
           type: string
         permittedUsage:
