@@ -53,8 +53,6 @@ func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	fmt.Println(string(respBody))
-
 	if err := json.Unmarshal(respBody, details); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
