@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "liked_zones_service"
+      POSTGRES_USER: "developer"
+      POSTGRES_PASSWORD: "developer"
+    ports:
+      - "5432:5432"
+#  quest:
+#    image: service
+#    ports:
+#      - "8082:8082"
+#    depends_on:
+#      - postgres
+
