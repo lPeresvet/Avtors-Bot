@@ -2,6 +2,7 @@ package port
 
 import (
 	"avtor.ru/bot/client"
+	"avtor.ru/bot/tg/internal/usecase/zones"
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -137,15 +138,22 @@ func (b *Bot) sendWelcome(chatID int64) {
 }
 
 func (b *Bot) analise(ctx context.Context, chatID int64, zoneID string) error {
-	//TODO validate zoneID
+	var msg tgbotapi.MessageConfig
 	log.Printf("Analyse zone with id %s", zoneID)
-	zone, err := b.analyseService.Analyse(ctx, zoneID)
-	if err != nil {
-		return err
+
+	if !zones.ValidateZone(zoneID) {
+		msg = tgbotapi.NewMessage(chatID, "Кадастровый номер участка невалиден ⚠️")
+		msg.ReplyMarkup = MainMenuKeyboard
+	} else {
+		zone, err := b.analyseService.Analyse(ctx, zoneID)
+		if err != nil {
+			return err
+		}
+
+		msg = tgbotapi.NewMessage(chatID, FormatZone(zone))
+		msg.ReplyMarkup = ZoneMenuKeyboard
 	}
 
-	msg := tgbotapi.NewMessage(chatID, FormatZone(zone))
-	msg.ReplyMarkup = ZoneMenuKeyboard
 	b.api.Send(msg)
 
 	return nil
