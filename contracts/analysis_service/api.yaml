@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: Analysis service API
   version: 0.1.0
@@ -34,7 +34,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /zones/{zoneID}/like:
+  /zones/{zoneID}/like/{userID}:
     post:
       summary: Add zone to list of favorites
       parameters:
@@ -42,6 +42,12 @@ paths:
           in: path
           required: true
           description: The id of the zone
+          schema:
+            type: string
+        - name: userID
+          in: path
+          required: true
+          description: The id of the user
           schema:
             type: string
       responses:

@@ -13,7 +13,12 @@ func main() {
 	container := di.NewContainer()
 	echoServer := container.GetEcho()
 
-	server.RegisterHandlers(echoServer, container.GetService())
+	service, err := container.GetService()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server.RegisterHandlers(echoServer, service)
 
 	log.Fatal(echoServer.Start("127.0.0.1:8080"))
 }

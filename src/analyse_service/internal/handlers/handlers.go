@@ -15,20 +15,34 @@ type NSPDClient interface {
 	GetZoneDetails(ctx context.Context, zoneID string) (*model.NSPDResp, error)
 }
 
+type Repository interface {
+	InsertLike(like model.Like) error
+	GetLikes(userID string) (*server.Zones, error)
+}
+
 type AnalyseService struct {
 	ctx        context.Context
 	nspdClient NSPDClient
+	repo       Repository
 }
 
-func NewAnalyseService(ctx context.Context, nspdClient NSPDClient) *AnalyseService {
+func NewAnalyseService(ctx context.Context, nspdClient NSPDClient, repository Repository) *AnalyseService {
 	return &AnalyseService{
 		ctx:        ctx,
 		nspdClient: nspdClient,
+		repo:       repository,
 	}
 }
 
 func (svc *AnalyseService) GetUserUserIDZones(ctx echo.Context, userID string) error {
-	return nil
+	zones, err := svc.repo.GetLikes(userID)
+	if err != nil {
+		log.Printf("GetLikes: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to get likes"})
+	}
+
+	return ctx.JSON(http.StatusOK, zones)
 }
 
 func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error {
@@ -56,6 +70,16 @@ func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string
 	return ctx.JSON(http.StatusOK, serviceResponse)
 }
 
-func (svc *AnalyseService) PostZonesZoneIDLike(ctx echo.Context, zoneID string) error {
-	return nil
+func (svc *AnalyseService) PostZonesZoneIDLikeUserID(ctx echo.Context, zoneID string, userID string) error {
+	err := svc.repo.InsertLike(model.Like{
+		ZoneID: zoneID,
+		UserID: userID,
+	})
+	if err != nil {
+		log.Printf("InsertLike: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to insert like"})
+	}
+
+	return ctx.JSON(http.StatusOK, nil)
 }

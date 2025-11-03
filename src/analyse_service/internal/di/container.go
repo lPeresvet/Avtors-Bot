@@ -3,6 +3,8 @@ package di
 import (
 	"avtor.ru/bot/analyse_service/internal/client"
 	"avtor.ru/bot/analyse_service/internal/handlers"
+	"avtor.ru/bot/analyse_service/internal/model"
+	"avtor.ru/bot/analyse_service/internal/repository"
 	"avtor.ru/bot/server"
 	"context"
 	"github.com/labstack/echo/v4"
@@ -14,6 +16,7 @@ type Container struct {
 
 	NSPDClient handlers.NSPDClient
 	Server     server.ServerInterface
+	Repository *repository.Repository
 }
 
 func NewContainer() *Container {
@@ -38,10 +41,36 @@ func (c *Container) GetNSPDClient() handlers.NSPDClient {
 	return c.NSPDClient
 }
 
-func (c *Container) GetService() server.ServerInterface {
+func (c *Container) GetService() (server.ServerInterface, error) {
 	if c.Server == nil {
-		c.Server = handlers.NewAnalyseService(c.ctx, c.GetNSPDClient())
+		repo, err := c.GetRepository()
+		if err != nil {
+			return nil, err
+		}
+
+		c.Server = handlers.NewAnalyseService(c.ctx, c.GetNSPDClient(), repo)
 	}
 
-	return c.Server
+	return c.Server, nil
+}
+
+func (c *Container) GetRepository() (*repository.Repository, error) {
+	config := model.DBConfig{
+		Host:     "localhost",
+		Port:     5432,
+		User:     "developer",
+		Password: "developer",
+		DBName:   "liked_zones_service",
+	}
+
+	if c.Repository == nil {
+		repo, err := repository.NewRepository(&config)
+		if err != nil {
+			return nil, err
+		}
+
+		c.Repository = repo
+	}
+
+	return c.Repository, nil
 }
