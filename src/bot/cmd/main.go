@@ -21,7 +21,7 @@ func main() {
 		log.Fatal("TELEGRAM_BOT_TOKEN environment variable is required")
 	}
 
-	nspd, err := adapter.NewNspd("http://127.0.0.1:8080")
+	nspd, err := adapter.NewAnalyseServiceAdapter("http://127.0.0.1:8080")
 	if err != nil {
 		log.Fatalf("Failed to create nspd client: %v", err)
 	}

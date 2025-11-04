@@ -2,10 +2,14 @@ package port
 
 import (
 	"avtor.ru/bot/client"
+	"avtor.ru/bot/tg/internal/adapter"
 	"avtor.ru/bot/tg/internal/usecase/zones"
 	"context"
+	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -26,6 +30,8 @@ type Bot struct {
 
 type AnalyseService interface {
 	Analyse(ctx context.Context, zoneID string) (*client.ZoneDetails, error)
+	GetLikes(ctx context.Context, userID int64) (*client.Zones, error)
+	LikeZone(ctx context.Context, userID int64, zoneID string) error
 }
 
 func NewBot(token string, analyseService AnalyseService) (*Bot, error) {
@@ -59,7 +65,15 @@ func (b *Bot) Start(ctx context.Context) error {
 				log.Printf("Error while handling message: %v", err)
 			}
 		} else if update.CallbackQuery != nil {
-			if err := b.handleQuery(ctx, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data); err != nil {
+			data := strings.Split(update.CallbackQuery.Data, "+")
+			cmd := data[0]
+			payload := ""
+
+			if len(data) > 1 {
+				payload = data[1]
+			}
+
+			if err := b.handleQuery(ctx, update.CallbackQuery.Message.Chat.ID, cmd, payload); err != nil {
 				log.Printf("Error while handling callback: %v", err)
 
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Не удалось обработать команду😔. Попробуйте позже")
@@ -68,7 +82,7 @@ func (b *Bot) Start(ctx context.Context) error {
 				continue
 			}
 
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Done!")
 			if _, err := b.api.Request(callback); err != nil {
 				log.Printf("Error while processing callback: %v", err)
 			}
@@ -97,31 +111,61 @@ func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) erro
 	return nil
 }
 
-func (b *Bot) handleQuery(_ context.Context, chatID int64, callbackData string) error {
-	var (
-		msg tgbotapi.MessageConfig
-	)
+func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callbackPayload string) error {
+	msgs := make([]tgbotapi.MessageConfig, 0)
 
-	switch CallbackData(callbackData) {
+	switch CallbackData(callbackCMD) {
 	case AnalyseData:
 		outText := "Введите номер кадастрового участка"
 
 		b.setUserState(chatID, AnalyseState)
-		msg = tgbotapi.NewMessage(chatID, outText)
+		msgs = append(msgs, tgbotapi.NewMessage(chatID, outText))
 	case LikedListData:
-		outText := "Пока не реализовано. Тут будет список помеченных участков"
-		msg = tgbotapi.NewMessage(chatID, outText)
-	case LikeData:
-		outText := "Участок добавлен в избранное ✅"
-		msg = tgbotapi.NewMessage(chatID, outText)
+		likes, err := b.analyseService.GetLikes(ctx, chatID)
+		if err != nil {
+			return fmt.Errorf("failed to get likes: %v", err)
+		}
 
-		//TODO handle like logic
+		for _, like := range *likes {
+			msg := tgbotapi.NewMessage(chatID, like.Id)
+			msg.ReplyMarkup = GetLikedZoneMenuKeyboard(like.Id)
+
+			msgs = append(msgs, msg)
+		}
+
+		msg := tgbotapi.NewMessage(chatID, "Меню:")
 
 		msg.ReplyMarkup = MainMenuKeyboard
+		msgs = append(msgs, msg)
+
+	case LikeData:
+		outText := "Участок добавлен в избранное ✅"
+		if err := b.analyseService.LikeZone(ctx, chatID, callbackPayload); err != nil {
+			if errors.Is(err, adapter.ErrorLikeZone) {
+				outText = "Не удалось добавить участок в избранное 😔"
+			}
+
+			log.Printf("failed to like zone: %v", err)
+		}
+
+		msg := tgbotapi.NewMessage(chatID, outText)
+
+		msg.ReplyMarkup = MainMenuKeyboard
+
+		msgs = append(msgs, msg)
+	case UnikeData:
+		outText := "Участок удален из избранного ✅"
+		msg := tgbotapi.NewMessage(chatID, outText)
+
+		msg.ReplyMarkup = MainMenuKeyboard
+
+		msgs = append(msgs, msg)
 	}
 
-	if _, err := b.api.Send(msg); err != nil {
-		return err
+	for _, msg := range msgs {
+		if _, err := b.api.Send(msg); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -151,7 +195,7 @@ func (b *Bot) analise(ctx context.Context, chatID int64, zoneID string) error {
 		}
 
 		msg = tgbotapi.NewMessage(chatID, FormatZone(zone))
-		msg.ReplyMarkup = ZoneMenuKeyboard
+		msg.ReplyMarkup = GetZoneMenuKeyboard(zoneID)
 	}
 
 	b.api.Send(msg)

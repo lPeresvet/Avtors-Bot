@@ -13,7 +13,7 @@ import (
 
 var createTabeCommand = `CREATE TABLE IF NOT EXISTS likes (
     id SERIAL PRIMARY KEY,
-    zone_id char(15) NOT NULL,
+    zone_id VARCHAR NOT NULL,
     user_id BIGINT NOT NULL
 );`
 
@@ -57,7 +57,7 @@ func NewRepository(config *model.DBConfig) (*Repository, error) {
 
 func (r *Repository) InsertLike(like model.Like) error {
 	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1)", like.ZoneID).Scan(&exists)
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1 AND user_id = $2)", like.ZoneID, like.UserID).Scan(&exists)
 	if err != nil {
 		return err
 	}
