@@ -52,6 +52,9 @@ type ServerInterface interface {
 	// Get zone analyses info
 	// (GET /zones/{zoneID}/analise)
 	GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error
+	// Delete zone from list of favorites
+	// (DELETE /zones/{zoneID}/like/{userID})
+	DeleteZonesZoneIDLikeUserID(ctx echo.Context, zoneID string, userID string) error
 	// Add zone to list of favorites
 	// (POST /zones/{zoneID}/like/{userID})
 	PostZonesZoneIDLikeUserID(ctx echo.Context, zoneID string, userID string) error
@@ -91,6 +94,30 @@ func (w *ServerInterfaceWrapper) GetZonesZoneIDAnalise(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetZonesZoneIDAnalise(ctx, zoneID)
+	return err
+}
+
+// DeleteZonesZoneIDLikeUserID converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteZonesZoneIDLikeUserID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "zoneID" -------------
+	var zoneID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "zoneID", ctx.Param("zoneID"), &zoneID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter zoneID: %s", err))
+	}
+
+	// ------------- Path parameter "userID" -------------
+	var userID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userID", ctx.Param("userID"), &userID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteZonesZoneIDLikeUserID(ctx, zoneID, userID)
 	return err
 }
 
@@ -148,6 +175,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 	router.GET(baseURL+"/user/:userID/zones", wrapper.GetUserUserIDZones)
 	router.GET(baseURL+"/zones/:zoneID/analise", wrapper.GetZonesZoneIDAnalise)
+	router.DELETE(baseURL+"/zones/:zoneID/like/:userID", wrapper.DeleteZonesZoneIDLikeUserID)
 	router.POST(baseURL+"/zones/:zoneID/like/:userID", wrapper.PostZonesZoneIDLikeUserID)
 
 }

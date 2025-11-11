@@ -10,7 +10,10 @@ import (
 	"strconv"
 )
 
-var ErrorLikeZone = errors.New("failed to like zone")
+var (
+	ErrorLikeZone   = errors.New("failed to like zone")
+	ErrorUnlikeZone = errors.New("failed to unlike zone")
+)
 
 type ServiceAdapter struct {
 	client *client.Client
@@ -61,6 +64,19 @@ func (n *ServiceAdapter) LikeZone(ctx context.Context, userID int64, zoneID stri
 
 	if resp.StatusCode != http.StatusOK {
 		return ErrorLikeZone
+	}
+
+	return nil
+}
+
+func (n *ServiceAdapter) UnlikeZone(ctx context.Context, userID int64, zoneID string) error {
+	resp, err := n.client.DeleteZonesZoneIDLikeUserID(ctx, zoneID, strconv.FormatInt(userID, 10))
+	if err != nil {
+		return fmt.Errorf("failed to unlike zone: %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrorUnlikeZone
 	}
 
 	return nil

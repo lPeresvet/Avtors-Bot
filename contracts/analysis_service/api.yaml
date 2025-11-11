@@ -65,6 +65,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete zone from list of favorites
+      parameters:
+        - name: zoneID
+          in: path
+          required: true
+          description: The id of the zone
+          schema:
+            type: string
+        - name: userID
+          in: path
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Zone disliked successfully
+        '400':
+          description: Zone id is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /user/{userID}/zones:
     get:
       summary: Get user favorite zones

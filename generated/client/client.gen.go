@@ -127,6 +127,9 @@ type ClientInterface interface {
 	// GetZonesZoneIDAnalise request
 	GetZonesZoneIDAnalise(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteZonesZoneIDLikeUserID request
+	DeleteZonesZoneIDLikeUserID(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostZonesZoneIDLikeUserID request
 	PostZonesZoneIDLikeUserID(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -145,6 +148,18 @@ func (c *Client) GetUserUserIDZones(ctx context.Context, userID string, reqEdito
 
 func (c *Client) GetZonesZoneIDAnalise(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetZonesZoneIDAnaliseRequest(c.Server, zoneID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteZonesZoneIDLikeUserID(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteZonesZoneIDLikeUserIDRequest(c.Server, zoneID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,6 +243,47 @@ func NewGetZonesZoneIDAnaliseRequest(server string, zoneID string) (*http.Reques
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteZonesZoneIDLikeUserIDRequest generates requests for DeleteZonesZoneIDLikeUserID
+func NewDeleteZonesZoneIDLikeUserIDRequest(server string, zoneID string, userID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "zoneID", runtime.ParamLocationPath, zoneID)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "userID", runtime.ParamLocationPath, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/zones/%s/like/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +381,9 @@ type ClientWithResponsesInterface interface {
 	// GetZonesZoneIDAnaliseWithResponse request
 	GetZonesZoneIDAnaliseWithResponse(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*GetZonesZoneIDAnaliseResponse, error)
 
+	// DeleteZonesZoneIDLikeUserIDWithResponse request
+	DeleteZonesZoneIDLikeUserIDWithResponse(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*DeleteZonesZoneIDLikeUserIDResponse, error)
+
 	// PostZonesZoneIDLikeUserIDWithResponse request
 	PostZonesZoneIDLikeUserIDWithResponse(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*PostZonesZoneIDLikeUserIDResponse, error)
 }
@@ -376,6 +435,29 @@ func (r GetZonesZoneIDAnaliseResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteZonesZoneIDLikeUserIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteZonesZoneIDLikeUserIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteZonesZoneIDLikeUserIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type PostZonesZoneIDLikeUserIDResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -415,6 +497,15 @@ func (c *ClientWithResponses) GetZonesZoneIDAnaliseWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseGetZonesZoneIDAnaliseResponse(rsp)
+}
+
+// DeleteZonesZoneIDLikeUserIDWithResponse request returning *DeleteZonesZoneIDLikeUserIDResponse
+func (c *ClientWithResponses) DeleteZonesZoneIDLikeUserIDWithResponse(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*DeleteZonesZoneIDLikeUserIDResponse, error) {
+	rsp, err := c.DeleteZonesZoneIDLikeUserID(ctx, zoneID, userID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteZonesZoneIDLikeUserIDResponse(rsp)
 }
 
 // PostZonesZoneIDLikeUserIDWithResponse request returning *PostZonesZoneIDLikeUserIDResponse
@@ -480,6 +571,39 @@ func ParseGetZonesZoneIDAnaliseResponse(rsp *http.Response) (*GetZonesZoneIDAnal
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteZonesZoneIDLikeUserIDResponse parses an HTTP response from a DeleteZonesZoneIDLikeUserIDWithResponse call
+func ParseDeleteZonesZoneIDLikeUserIDResponse(rsp *http.Response) (*DeleteZonesZoneIDLikeUserIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteZonesZoneIDLikeUserIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

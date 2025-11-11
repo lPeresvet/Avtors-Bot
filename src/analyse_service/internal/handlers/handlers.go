@@ -17,6 +17,7 @@ type NSPDClient interface {
 
 type Repository interface {
 	InsertLike(like model.Like) error
+	DeleteLike(like model.Like) error
 	GetLikes(userID string) (*server.Zones, error)
 }
 
@@ -43,6 +44,23 @@ func (svc *AnalyseService) GetUserUserIDZones(ctx echo.Context, userID string) e
 	}
 
 	return ctx.JSON(http.StatusOK, zones)
+}
+
+func (svc *AnalyseService) DeleteZonesZoneIDLikeUserID(ctx echo.Context, zoneID string, userID string) error {
+	err := svc.repo.DeleteLike(model.Like{
+		ZoneID: zoneID,
+		UserID: userID,
+	})
+	if err != nil {
+		log.Printf("Failed to unlike zone: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to delete zone like",
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, nil)
 }
 
 func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error {

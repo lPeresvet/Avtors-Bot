@@ -32,6 +32,7 @@ type AnalyseService interface {
 	Analyse(ctx context.Context, zoneID string) (*client.ZoneDetails, error)
 	GetLikes(ctx context.Context, userID int64) (*client.Zones, error)
 	LikeZone(ctx context.Context, userID int64, zoneID string) error
+	UnlikeZone(ctx context.Context, userID int64, zoneID string) error
 }
 
 func NewBot(token string, analyseService AnalyseService) (*Bot, error) {
@@ -155,8 +156,16 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 		msgs = append(msgs, msg)
 	case UnikeData:
 		outText := "Участок удален из избранного ✅"
-		msg := tgbotapi.NewMessage(chatID, outText)
 
+		if err := b.analyseService.UnlikeZone(ctx, chatID, callbackPayload); err != nil {
+			if errors.Is(err, adapter.ErrorLikeZone) {
+				outText = "Не удалось удалить участок из избранного 😔"
+			}
+
+			log.Printf("failed to unlike zone: %v", err)
+		}
+
+		msg := tgbotapi.NewMessage(chatID, outText)
 		msg.ReplyMarkup = MainMenuKeyboard
 
 		msgs = append(msgs, msg)

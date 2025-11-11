@@ -17,7 +17,10 @@ var createTabeCommand = `CREATE TABLE IF NOT EXISTS likes (
     user_id BIGINT NOT NULL
 );`
 
-var ErrAlreadyExists = errors.New("already exists")
+var (
+	ErrAlreadyExists = errors.New("already exists")
+	ErrNotExists     = errors.New("not exists")
+)
 
 func initDB(config *model.DBConfig) (*sql.DB, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
@@ -75,6 +78,38 @@ func (r *Repository) InsertLike(like model.Like) error {
 	stmt, err := tx.Prepare(`
         INSERT INTO likes (zone_id, user_id) 
         VALUES ($1, $2)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(like.ZoneID, like.UserID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *Repository) DeleteLike(like model.Like) error {
+	var exists bool
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1 AND user_id = $2)", like.ZoneID, like.UserID).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return ErrNotExists
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`
+        DELETE FROM likes
+        WHERE zone_id = $1 AND user_id = $2`)
 	if err != nil {
 		return err
 	}
