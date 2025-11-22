@@ -136,6 +136,10 @@ components:
           type: string
         permittedUsage:
           type: string
+        address:
+          type: string
+        square:
+          type: integer
     Zone:
       type: object
       required:

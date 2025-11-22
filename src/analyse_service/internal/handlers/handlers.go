@@ -83,6 +83,8 @@ func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string
 		PermittedUsage: details.Data.Features[0].Properties.Options.PermittedUseEstablishedByDocument,
 		PropertyType:   ConvertOwnershipType(details.Data.Features[0].Properties.Options.OwnershipType),
 		RightType:      &details.Data.Features[0].Properties.Options.RightType,
+		Square:         &details.Data.Features[0].Properties.Options.LandRecordAreaVerified,
+		Address:        &details.Data.Features[0].Properties.Options.ReadableAddress,
 	}
 
 	return ctx.JSON(http.StatusOK, serviceResponse)

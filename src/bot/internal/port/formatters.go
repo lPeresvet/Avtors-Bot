@@ -6,5 +6,5 @@ import (
 )
 
 func FormatZone(zone *client.ZoneDetails) string {
-	return fmt.Sprintf("Кадастровый номер: %v\nФормат собственности: %v\nВид использования: %v", zone.Id, zone.PropertyType, zone.PermittedUsage)
+	return fmt.Sprintf("*Кадастровый номер:* %v\n*Формат собственности:* %v\n*Вид использования:* %v\n*Адрес:* %v\n*Площадь:* %v кв. м.", zone.Id, zone.PropertyType, zone.PermittedUsage, *zone.Address, *zone.Square)
 }

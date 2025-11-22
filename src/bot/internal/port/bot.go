@@ -205,6 +205,7 @@ func (b *Bot) analise(ctx context.Context, chatID int64, zoneID string) error {
 
 		msg = tgbotapi.NewMessage(chatID, FormatZone(zone))
 		msg.ReplyMarkup = GetZoneMenuKeyboard(zoneID)
+		msg.ParseMode = tgbotapi.ModeMarkdown
 	}
 
 	b.api.Send(msg)

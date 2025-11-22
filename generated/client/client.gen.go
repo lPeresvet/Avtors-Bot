@@ -39,10 +39,12 @@ type Zone struct {
 
 // ZoneDetails defines model for ZoneDetails.
 type ZoneDetails struct {
+	Address        *string      `json:"address,omitempty"`
 	Id             string       `json:"id"`
 	PermittedUsage string       `json:"permittedUsage"`
 	PropertyType   PropertyType `json:"propertyType"`
 	RightType      *string      `json:"rightType,omitempty"`
+	Square         *int         `json:"square,omitempty"`
 }
 
 // Zones defines model for Zones.
