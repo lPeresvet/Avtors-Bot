@@ -18,7 +18,7 @@ type NSPDClient interface {
 type Repository interface {
 	InsertLike(like model.Like) error
 	DeleteLike(like model.Like) error
-	GetLikes(userID string) (*server.Zones, error)
+	GetLikes() (*server.Zones, error)
 }
 
 type AnalyseService struct {
@@ -35,8 +35,8 @@ func NewAnalyseService(ctx context.Context, nspdClient NSPDClient, repository Re
 	}
 }
 
-func (svc *AnalyseService) GetUserUserIDZones(ctx echo.Context, userID string) error {
-	zones, err := svc.repo.GetLikes(userID)
+func (svc *AnalyseService) GetUserZones(ctx echo.Context) error {
+	zones, err := svc.repo.GetLikes()
 	if err != nil {
 		log.Printf("GetLikes: %v", err)
 

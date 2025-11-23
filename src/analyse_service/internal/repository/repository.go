@@ -60,7 +60,7 @@ func NewRepository(config *model.DBConfig) (*Repository, error) {
 
 func (r *Repository) InsertLike(like model.Like) error {
 	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1 AND user_id = $2)", like.ZoneID, like.UserID).Scan(&exists)
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1)", like.ZoneID).Scan(&exists)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (r *Repository) InsertLike(like model.Like) error {
 
 func (r *Repository) DeleteLike(like model.Like) error {
 	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1 AND user_id = $2)", like.ZoneID, like.UserID).Scan(&exists)
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE zone_id = $1)", like.ZoneID).Scan(&exists)
 	if err != nil {
 		return err
 	}
@@ -109,21 +109,21 @@ func (r *Repository) DeleteLike(like model.Like) error {
 
 	stmt, err := tx.Prepare(`
         DELETE FROM likes
-        WHERE zone_id = $1 AND user_id = $2`)
+        WHERE zone_id = $1`)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to prepare delete likes stmt: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(like.ZoneID, like.UserID); err != nil {
-		return err
+	if _, err := stmt.Exec(like.ZoneID); err != nil {
+		return fmt.Errorf("failed to exec delete likes: %w", err)
 	}
 
 	return tx.Commit()
 }
 
-func (r *Repository) GetLikes(userID string) (*server.Zones, error) {
-	rows, err := r.db.Query("SELECT zone_id FROM likes WHERE user_id = $1", userID)
+func (r *Repository) GetLikes() (*server.Zones, error) {
+	rows, err := r.db.Query("SELECT zone_id FROM likes")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get likes: %w", err)
 	}

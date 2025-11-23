@@ -48,9 +48,9 @@ type Zones = []Zone
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Get user favorite zones
-	// (GET /user/{userID}/zones)
-	GetUserUserIDZones(ctx echo.Context, userID string) error
+	// Get favorite zones
+	// (GET /user/zones)
+	GetUserZones(ctx echo.Context) error
 	// Get zone analyses info
 	// (GET /zones/{zoneID}/analise)
 	GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error
@@ -67,19 +67,12 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
-// GetUserUserIDZones converts echo context to params.
-func (w *ServerInterfaceWrapper) GetUserUserIDZones(ctx echo.Context) error {
+// GetUserZones converts echo context to params.
+func (w *ServerInterfaceWrapper) GetUserZones(ctx echo.Context) error {
 	var err error
-	// ------------- Path parameter "userID" -------------
-	var userID string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "userID", ctx.Param("userID"), &userID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userID: %s", err))
-	}
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetUserUserIDZones(ctx, userID)
+	err = w.Handler.GetUserZones(ctx)
 	return err
 }
 
@@ -175,7 +168,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/user/:userID/zones", wrapper.GetUserUserIDZones)
+	router.GET(baseURL+"/user/zones", wrapper.GetUserZones)
 	router.GET(baseURL+"/zones/:zoneID/analise", wrapper.GetZonesZoneIDAnalise)
 	router.DELETE(baseURL+"/zones/:zoneID/like/:userID", wrapper.DeleteZonesZoneIDLikeUserID)
 	router.POST(baseURL+"/zones/:zoneID/like/:userID", wrapper.PostZonesZoneIDLikeUserID)

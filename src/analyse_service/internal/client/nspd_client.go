@@ -45,7 +45,9 @@ func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.
 	}
 	defer resp.Body.Close()
 
-	fmt.Println(resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get zone details: %s", resp.Status)
+	}
 
 	details := &model.NSPDResp{}
 	respBody, err := ioutil.ReadAll(resp.Body)
@@ -56,10 +58,6 @@ func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.
 	if err := json.Unmarshal(respBody, details); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-
-	//if err := json.NewDecoder(resp.Body).Decode(details); err != nil {
-	//	return nil, fmt.Errorf("failed to decode response: %w", err)
-	//}
 
 	return details, nil
 }

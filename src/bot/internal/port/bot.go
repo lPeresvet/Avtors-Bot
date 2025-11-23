@@ -30,7 +30,7 @@ type Bot struct {
 
 type AnalyseService interface {
 	Analyse(ctx context.Context, zoneID string) (*client.ZoneDetails, error)
-	GetLikes(ctx context.Context, userID int64) (*client.Zones, error)
+	GetLikes(ctx context.Context) (*client.Zones, error)
 	LikeZone(ctx context.Context, userID int64, zoneID string) error
 	UnlikeZone(ctx context.Context, userID int64, zoneID string) error
 }
@@ -122,7 +122,7 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 		b.setUserState(chatID, AnalyseState)
 		msgs = append(msgs, tgbotapi.NewMessage(chatID, outText))
 	case LikedListData:
-		likes, err := b.analyseService.GetLikes(ctx, chatID)
+		likes, err := b.analyseService.GetLikes(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get likes: %v", err)
 		}
@@ -158,9 +158,7 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 		outText := "Участок удален из избранного ✅"
 
 		if err := b.analyseService.UnlikeZone(ctx, chatID, callbackPayload); err != nil {
-			if errors.Is(err, adapter.ErrorLikeZone) {
-				outText = "Не удалось удалить участок из избранного 😔"
-			}
+			outText = "Не удалось удалить участок из избранного 😔"
 
 			log.Printf("failed to unlike zone: %v", err)
 		}

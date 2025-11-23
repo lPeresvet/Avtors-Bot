@@ -95,16 +95,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /user/{userID}/zones:
+  /user/zones:
     get:
-      summary: Get user favorite zones
-      parameters:
-        - name: userID
-          in: path
-          required: true
-          description: The tg id of the user
-          schema:
-            type: string
+      summary: Get favorite zones
       responses:
         '200':
           description: List of liked zones

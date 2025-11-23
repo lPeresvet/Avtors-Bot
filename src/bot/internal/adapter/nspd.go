@@ -42,9 +42,9 @@ func (n *ServiceAdapter) Analyse(ctx context.Context, zoneID string) (*client.Zo
 	return zoneInfo, nil
 }
 
-func (n *ServiceAdapter) GetLikes(ctx context.Context, userID int64) (*client.Zones, error) {
+func (n *ServiceAdapter) GetLikes(ctx context.Context) (*client.Zones, error) {
 	zones := &client.Zones{}
-	resp, err := n.client.GetUserUserIDZones(ctx, strconv.FormatInt(userID, 10))
+	resp, err := n.client.GetUserZones(ctx)
 	if err != nil {
 		return zones, fmt.Errorf("failed to get user likes: %s", err)
 	}

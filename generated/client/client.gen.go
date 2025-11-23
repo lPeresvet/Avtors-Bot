@@ -123,8 +123,8 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetUserUserIDZones request
-	GetUserUserIDZones(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetUserZones request
+	GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetZonesZoneIDAnalise request
 	GetZonesZoneIDAnalise(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -136,8 +136,8 @@ type ClientInterface interface {
 	PostZonesZoneIDLikeUserID(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetUserUserIDZones(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetUserUserIDZonesRequest(c.Server, userID)
+func (c *Client) GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserZonesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -184,23 +184,16 @@ func (c *Client) PostZonesZoneIDLikeUserID(ctx context.Context, zoneID string, u
 	return c.Client.Do(req)
 }
 
-// NewGetUserUserIDZonesRequest generates requests for GetUserUserIDZones
-func NewGetUserUserIDZonesRequest(server string, userID string) (*http.Request, error) {
+// NewGetUserZonesRequest generates requests for GetUserZones
+func NewGetUserZonesRequest(server string) (*http.Request, error) {
 	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "userID", runtime.ParamLocationPath, userID)
-	if err != nil {
-		return nil, err
-	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/user/%s/zones", pathParam0)
+	operationPath := fmt.Sprintf("/user/zones")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -377,8 +370,8 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetUserUserIDZonesWithResponse request
-	GetUserUserIDZonesWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*GetUserUserIDZonesResponse, error)
+	// GetUserZonesWithResponse request
+	GetUserZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserZonesResponse, error)
 
 	// GetZonesZoneIDAnaliseWithResponse request
 	GetZonesZoneIDAnaliseWithResponse(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*GetZonesZoneIDAnaliseResponse, error)
@@ -390,7 +383,7 @@ type ClientWithResponsesInterface interface {
 	PostZonesZoneIDLikeUserIDWithResponse(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*PostZonesZoneIDLikeUserIDResponse, error)
 }
 
-type GetUserUserIDZonesResponse struct {
+type GetUserZonesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Zones
@@ -398,7 +391,7 @@ type GetUserUserIDZonesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetUserUserIDZonesResponse) Status() string {
+func (r GetUserZonesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -406,7 +399,7 @@ func (r GetUserUserIDZonesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetUserUserIDZonesResponse) StatusCode() int {
+func (r GetUserZonesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -483,13 +476,13 @@ func (r PostZonesZoneIDLikeUserIDResponse) StatusCode() int {
 	return 0
 }
 
-// GetUserUserIDZonesWithResponse request returning *GetUserUserIDZonesResponse
-func (c *ClientWithResponses) GetUserUserIDZonesWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*GetUserUserIDZonesResponse, error) {
-	rsp, err := c.GetUserUserIDZones(ctx, userID, reqEditors...)
+// GetUserZonesWithResponse request returning *GetUserZonesResponse
+func (c *ClientWithResponses) GetUserZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserZonesResponse, error) {
+	rsp, err := c.GetUserZones(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetUserUserIDZonesResponse(rsp)
+	return ParseGetUserZonesResponse(rsp)
 }
 
 // GetZonesZoneIDAnaliseWithResponse request returning *GetZonesZoneIDAnaliseResponse
@@ -519,15 +512,15 @@ func (c *ClientWithResponses) PostZonesZoneIDLikeUserIDWithResponse(ctx context.
 	return ParsePostZonesZoneIDLikeUserIDResponse(rsp)
 }
 
-// ParseGetUserUserIDZonesResponse parses an HTTP response from a GetUserUserIDZonesWithResponse call
-func ParseGetUserUserIDZonesResponse(rsp *http.Response) (*GetUserUserIDZonesResponse, error) {
+// ParseGetUserZonesResponse parses an HTTP response from a GetUserZonesWithResponse call
+func ParseGetUserZonesResponse(rsp *http.Response) (*GetUserZonesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetUserUserIDZonesResponse{
+	response := &GetUserZonesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
