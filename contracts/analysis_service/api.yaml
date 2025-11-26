@@ -111,6 +111,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /user/auth/{userID}:
+    get:
+      summary: Auth user
+      parameters:
+        - name: userID
+          in: path
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /user/create/{userID}:
+    post:
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+                - userName
+              properties:
+                role:
+                  type: string
+                userName:
+                  type: string
+      parameters:
+        - name: userID
+          in: path
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+      responses:
+        '201':
+          description: User created
+        '500':
+          description: Failed to create user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -144,6 +200,12 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Zone'
+    Role:
+      type: string
+      enum:
+        - Admin
+        - Analyser
+        - UndefinedRole
     PropertyType:
       type: string
       enum:

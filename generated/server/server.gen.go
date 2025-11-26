@@ -19,6 +19,13 @@ const (
 	Undefined PropertyType = "Undefined"
 )
 
+// Defines values for Role.
+const (
+	Admin         Role = "Admin"
+	Analyser      Role = "Analyser"
+	UndefinedRole Role = "UndefinedRole"
+)
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -27,6 +34,9 @@ type Error struct {
 
 // PropertyType defines model for PropertyType.
 type PropertyType string
+
+// Role defines model for Role.
+type Role string
 
 // Zone defines model for Zone.
 type Zone struct {
@@ -46,8 +56,23 @@ type ZoneDetails struct {
 // Zones defines model for Zones.
 type Zones = []Zone
 
+// PostUserCreateUserIDJSONBody defines parameters for PostUserCreateUserID.
+type PostUserCreateUserIDJSONBody struct {
+	Role     string `json:"role"`
+	UserName string `json:"userName"`
+}
+
+// PostUserCreateUserIDJSONRequestBody defines body for PostUserCreateUserID for application/json ContentType.
+type PostUserCreateUserIDJSONRequestBody PostUserCreateUserIDJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Auth user
+	// (GET /user/auth/{userID})
+	GetUserAuthUserID(ctx echo.Context, userID string) error
+	// Create user
+	// (POST /user/create/{userID})
+	PostUserCreateUserID(ctx echo.Context, userID string) error
 	// Get favorite zones
 	// (GET /user/zones)
 	GetUserZones(ctx echo.Context) error
@@ -65,6 +90,38 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetUserAuthUserID converts echo context to params.
+func (w *ServerInterfaceWrapper) GetUserAuthUserID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "userID" -------------
+	var userID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userID", ctx.Param("userID"), &userID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetUserAuthUserID(ctx, userID)
+	return err
+}
+
+// PostUserCreateUserID converts echo context to params.
+func (w *ServerInterfaceWrapper) PostUserCreateUserID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "userID" -------------
+	var userID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userID", ctx.Param("userID"), &userID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.PostUserCreateUserID(ctx, userID)
+	return err
 }
 
 // GetUserZones converts echo context to params.
@@ -168,6 +225,8 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/user/auth/:userID", wrapper.GetUserAuthUserID)
+	router.POST(baseURL+"/user/create/:userID", wrapper.PostUserCreateUserID)
 	router.GET(baseURL+"/user/zones", wrapper.GetUserZones)
 	router.GET(baseURL+"/zones/:zoneID/analise", wrapper.GetZonesZoneIDAnalise)
 	router.DELETE(baseURL+"/zones/:zoneID/like/:userID", wrapper.DeleteZonesZoneIDLikeUserID)

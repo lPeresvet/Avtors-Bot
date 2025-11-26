@@ -8,10 +8,11 @@ import (
 type CallbackData string
 
 var (
-	AnalyseData   CallbackData = "analyse"
-	LikedListData CallbackData = "likedList"
-	LikeData      CallbackData = "like"
-	UnikeData     CallbackData = "unlike"
+	AnalyseData    CallbackData = "analyse"
+	LikedListData  CallbackData = "likedList"
+	LikeData       CallbackData = "like"
+	UnlikeData     CallbackData = "unlike"
+	CreateUserData CallbackData = "createUser"
 )
 
 func (c *CallbackData) String() string {
@@ -25,11 +26,26 @@ var (
 	likedListRow = tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("Cписок избранных участков 📋", LikedListData.String()),
 	)
+	umRow = tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Добавить пользователя", CreateUserData.String()),
+	)
+	noAuth = tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Вы не авторизованы", "/start"))
+)
+
+var MainMenuNoAuthKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	noAuth,
 )
 
 var MainMenuKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 	analyseRow,
 	likedListRow,
+)
+
+var MainMenuKeyboardForAdmin = tgbotapi.NewInlineKeyboardMarkup(
+	analyseRow,
+	likedListRow,
+	umRow,
 )
 
 func GetZoneMenuKeyboard(zoneID string) tgbotapi.InlineKeyboardMarkup {
@@ -45,7 +61,7 @@ func GetZoneMenuKeyboard(zoneID string) tgbotapi.InlineKeyboardMarkup {
 func GetLikedZoneMenuKeyboard(zoneID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Удалить из избранного ❌️", fmt.Sprintf("%s+%s", UnikeData.String(), zoneID)),
+			tgbotapi.NewInlineKeyboardButtonData("Удалить из избранного ❌️", fmt.Sprintf("%s+%s", UnlikeData.String(), zoneID)),
 		),
 	)
 }

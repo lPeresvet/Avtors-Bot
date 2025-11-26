@@ -11,10 +11,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var createTabeCommand = `CREATE TABLE IF NOT EXISTS likes (
+var createLikesTabeQuery = `CREATE TABLE IF NOT EXISTS likes (
     id SERIAL PRIMARY KEY,
     zone_id VARCHAR NOT NULL,
     user_id BIGINT NOT NULL
+);`
+
+var createUsersTabeQuery = `CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    user_role varchar NOT NULL,
+    user_name varchar NOT NULL UNIQUE
 );`
 
 var (
@@ -37,9 +43,14 @@ func initDB(config *model.DBConfig) (*sql.DB, error) {
 
 	log.Println("Successfully connected to PostgreSQL!")
 
-	_, err = db.Exec(createTabeCommand)
+	_, err = db.Exec(createLikesTabeQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %w", err)
+		return nil, fmt.Errorf("failed to create likes table: %w", err)
+	}
+
+	_, err = db.Exec(createUsersTabeQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create users table: %w", err)
 	}
 
 	return db, nil
@@ -144,4 +155,35 @@ func (r *Repository) GetLikes() (*server.Zones, error) {
 	}
 
 	return &zones, nil
+}
+
+func (r *Repository) GetUserRole(username string) (*model.Role, error) {
+	var role model.Role
+	if err := r.db.QueryRow("SELECT user_role FROM users WHERE user_name = $1", username).Scan(&role); err != nil {
+		return nil, fmt.Errorf("failed to get uesr role: %w", err)
+	}
+
+	return &role, nil
+}
+
+func (r *Repository) CreateUser(username, role string) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`
+        INSERT INTO users (user_role, user_name) 
+        VALUES ($1, $2)`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare create user: %w", err)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(role, username); err != nil {
+		return fmt.Errorf("failed to exec create user: %w", err)
+	}
+
+	return tx.Commit()
 }

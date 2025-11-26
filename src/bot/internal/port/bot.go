@@ -16,16 +16,28 @@ import (
 type State string
 
 var (
-	AnalyseState State = "analyse"
-	NoState      State = "no"
+	AnalyseState    State = "analyse"
+	CreateUserState State = "create_user"
+	NoState         State = "no"
+)
+
+type Role string
+
+var (
+	AdminRole     Role = "admin"
+	AnalyserRole  Role = "analyser"
+	UndefinedRole Role = "undefined"
 )
 
 type Bot struct {
 	api            *tgbotapi.BotAPI
 	analyseService AnalyseService
+	userService    UserService
 
 	mu     sync.Mutex
 	states map[int64]State
+
+	roles map[int64]Role
 }
 
 type AnalyseService interface {
@@ -35,7 +47,12 @@ type AnalyseService interface {
 	UnlikeZone(ctx context.Context, userID int64, zoneID string) error
 }
 
-func NewBot(token string, analyseService AnalyseService) (*Bot, error) {
+type UserService interface {
+	CreateUser(ctx context.Context, username, role string) error
+	GetUserRole(ctx context.Context, username string) (string, error)
+}
+
+func NewBot(token string, analyseService AnalyseService, umService UserService) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
@@ -44,7 +61,9 @@ func NewBot(token string, analyseService AnalyseService) (*Bot, error) {
 	return &Bot{
 		api:            api,
 		analyseService: analyseService,
+		userService:    umService,
 		states:         make(map[int64]State),
+		roles:          make(map[int64]Role),
 	}, nil
 }
 
@@ -74,7 +93,7 @@ func (b *Bot) Start(ctx context.Context) error {
 				payload = data[1]
 			}
 
-			if err := b.handleQuery(ctx, update.CallbackQuery.Message.Chat.ID, cmd, payload); err != nil {
+			if err := b.handleQuery(ctx, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.From.UserName, cmd, payload); err != nil {
 				log.Printf("Error while handling callback: %v", err)
 
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Не удалось обработать команду😔. Попробуйте позже")
@@ -94,10 +113,18 @@ func (b *Bot) Start(ctx context.Context) error {
 }
 
 func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) error {
+	if err := b.ProceedUserRole(ctx, message.Chat.ID, message.From.UserName); err != nil {
+		return fmt.Errorf("failed to proceed user role: %w", err)
+	}
+
 	switch b.getUserState(message.Chat.ID) {
 	case AnalyseState:
 		b.clearUserState(message.Chat.ID)
 		return b.analise(ctx, message.Chat.ID, message.Text)
+	case CreateUserState:
+		b.clearUserState(message.Chat.ID)
+
+		return b.createUser(ctx, message.Chat.ID, message.Text)
 	}
 
 	switch message.Command() {
@@ -112,7 +139,11 @@ func (b *Bot) handleMessage(ctx context.Context, message *tgbotapi.Message) erro
 	return nil
 }
 
-func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callbackPayload string) error {
+func (b *Bot) handleQuery(ctx context.Context, chatID int64, username string, callbackCMD, callbackPayload string) error {
+	if err := b.ProceedUserRole(ctx, chatID, username); err != nil {
+		return fmt.Errorf("failed to proceed user role: %w", err)
+	}
+
 	msgs := make([]tgbotapi.MessageConfig, 0)
 
 	switch CallbackData(callbackCMD) {
@@ -120,6 +151,11 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 		outText := "Введите номер кадастрового участка"
 
 		b.setUserState(chatID, AnalyseState)
+		msgs = append(msgs, tgbotapi.NewMessage(chatID, outText))
+	case CreateUserData:
+		outText := "Введите пользователя в формате: tg_имя_пользователя - роль\n Возможны роли Admin или Analyser"
+
+		b.setUserState(chatID, CreateUserState)
 		msgs = append(msgs, tgbotapi.NewMessage(chatID, outText))
 	case LikedListData:
 		likes, err := b.analyseService.GetLikes(ctx)
@@ -136,7 +172,7 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 
 		msg := tgbotapi.NewMessage(chatID, "Меню:")
 
-		msg.ReplyMarkup = MainMenuKeyboard
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 		msgs = append(msgs, msg)
 
 	case LikeData:
@@ -151,10 +187,10 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 
 		msg := tgbotapi.NewMessage(chatID, outText)
 
-		msg.ReplyMarkup = MainMenuKeyboard
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 
 		msgs = append(msgs, msg)
-	case UnikeData:
+	case UnlikeData:
 		outText := "Участок удален из избранного ✅"
 
 		if err := b.analyseService.UnlikeZone(ctx, chatID, callbackPayload); err != nil {
@@ -164,7 +200,7 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, callbackCMD, callba
 		}
 
 		msg := tgbotapi.NewMessage(chatID, outText)
-		msg.ReplyMarkup = MainMenuKeyboard
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 
 		msgs = append(msgs, msg)
 	}
@@ -184,7 +220,7 @@ func (b *Bot) sendWelcome(chatID int64) {
 Я бот анализа земли. Вот что я могу ⬇️`
 
 	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ReplyMarkup = MainMenuKeyboard
+	msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 	b.api.Send(msg)
 }
 
@@ -194,7 +230,7 @@ func (b *Bot) analise(ctx context.Context, chatID int64, zoneID string) error {
 
 	if !zones.ValidateZone(zoneID) {
 		msg = tgbotapi.NewMessage(chatID, "Кадастровый номер участка невалиден ⚠️")
-		msg.ReplyMarkup = MainMenuKeyboard
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 	} else {
 		zone, err := b.analyseService.Analyse(ctx, zoneID)
 		if err != nil {
@@ -239,11 +275,78 @@ func (b *Bot) clearUserState(userID int64) {
 func (b *Bot) sendMainMenu(chatID int64) {
 	text := "Главное меню"
 	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ReplyMarkup = MainMenuKeyboard
+	msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
 
 	b.api.Send(msg)
 }
 
 func (b *Bot) Stop() {
 	b.api.StopReceivingUpdates()
+}
+
+func (b *Bot) ProceedUserRole(ctx context.Context, chatID int64, username string) error {
+	log.Printf("ProceedUserRole: username=%s, chatID=%d", username, chatID)
+
+	role, err := b.userService.GetUserRole(ctx, username)
+	if err != nil {
+		b.clearUserRole(chatID)
+		log.Printf("failed to get user role: %v\n", err)
+
+		//return fmt.Errorf("failed to retrieve user role: %v", err)
+		return nil
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.roles[chatID] = Role(role)
+
+	return nil
+}
+
+func (b *Bot) clearUserRole(chatID int64) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	delete(b.roles, chatID)
+}
+
+func (b *Bot) GetMainMenuBasedOnRole(chatID int64) tgbotapi.InlineKeyboardMarkup {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	role := Role(strings.ToLower(string(b.roles[chatID])))
+	if role == AdminRole {
+		return MainMenuKeyboardForAdmin
+	} else if role == AnalyserRole {
+		return MainMenuKeyboard
+	}
+
+	return MainMenuNoAuthKeyboard
+}
+
+func (b *Bot) createUser(ctx context.Context, chatID int64, msgData string) error {
+	var text string
+	data := strings.Split(msgData, " - ")
+	text = "Пользователь создан"
+
+	if len(data) == 2 {
+		newRole := strings.ToLower(data[1])
+		log.Printf(newRole)
+		if !(newRole == string(AdminRole) || newRole == string(AnalyserRole)) {
+			text = "Невалидная роль"
+		} else if err := b.userService.CreateUser(ctx, data[0], data[1]); err != nil {
+			text = "Не получилось создать нового пользователя"
+
+			log.Printf("Failed to create user: %v\n", err)
+		}
+	} else {
+		text = "Невалидный формат запроса"
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
+
+	b.api.Send(msg)
+
+	return nil
 }

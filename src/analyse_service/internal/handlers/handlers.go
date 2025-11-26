@@ -4,6 +4,7 @@ import (
 	"avtor.ru/bot/analyse_service/internal/model"
 	"avtor.ru/bot/server"
 	"context"
+	"encoding/json"
 	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
@@ -19,6 +20,8 @@ type Repository interface {
 	InsertLike(like model.Like) error
 	DeleteLike(like model.Like) error
 	GetLikes() (*server.Zones, error)
+	GetUserRole(username string) (*model.Role, error)
+	CreateUser(username, role string) error
 }
 
 type AnalyseService struct {
@@ -102,4 +105,38 @@ func (svc *AnalyseService) PostZonesZoneIDLikeUserID(ctx echo.Context, zoneID st
 	}
 
 	return ctx.JSON(http.StatusOK, nil)
+}
+
+func (svc *AnalyseService) GetUserAuthUserID(ctx echo.Context, username string) error {
+	role, err := svc.repo.GetUserRole(username)
+	if err != nil {
+		log.Printf("GetUserRole: %v", err)
+
+		return ctx.JSON(http.StatusNotFound, server.Error{Code: http.StatusNotFound, Message: "Failed to get user role"})
+	}
+
+	convertedRole := ConvertRole(*role)
+	if convertedRole == server.UndefinedRole {
+		log.Printf("GetUserRole failed to convert role: %v", convertedRole)
+
+		return ctx.JSON(http.StatusNotFound, server.Error{Code: http.StatusNotFound, Message: "Failed to get user role"})
+	}
+
+	return ctx.JSON(http.StatusOK, convertedRole)
+}
+
+func (svc *AnalyseService) PostUserCreateUserID(ctx echo.Context, _ string) error {
+	var user model.User
+	if err := json.NewDecoder(ctx.Request().Body).Decode(&user); err != nil {
+		log.Printf("PostUserCreateUserID: %v", err)
+		return ctx.JSON(http.StatusBadRequest, server.Error{Code: http.StatusBadRequest, Message: "Failed to parse request body"})
+	}
+
+	if err := svc.repo.CreateUser(user.Username, string(user.Role)); err != nil {
+		log.Printf("CreateUser: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to create user"})
+	}
+
+	return ctx.JSON(http.StatusCreated, nil)
 }

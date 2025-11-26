@@ -22,7 +22,7 @@ type ServiceAdapter struct {
 func NewAnalyseServiceAdapter(address string) (*ServiceAdapter, error) {
 	nspdClient, err := client.NewClient(address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create nspd client: %s", err)
+		return nil, fmt.Errorf("failed to create nspd client: %w", err)
 	}
 
 	return &ServiceAdapter{client: nspdClient}, nil
@@ -31,12 +31,12 @@ func NewAnalyseServiceAdapter(address string) (*ServiceAdapter, error) {
 func (n *ServiceAdapter) Analyse(ctx context.Context, zoneID string) (*client.ZoneDetails, error) {
 	resp, err := n.client.GetZonesZoneIDAnalise(ctx, zoneID)
 	if err != nil {
-		return &client.ZoneDetails{}, fmt.Errorf("failed to get zone analise: %s", err)
+		return &client.ZoneDetails{}, fmt.Errorf("failed to get zone analise: %w", err)
 	}
 
 	zoneInfo := &client.ZoneDetails{}
 	if err := json.NewDecoder(resp.Body).Decode(zoneInfo); err != nil {
-		return &client.ZoneDetails{}, fmt.Errorf("failed to decode zone info: %s", err)
+		return &client.ZoneDetails{}, fmt.Errorf("failed to decode zone info: %w", err)
 	}
 
 	return zoneInfo, nil
@@ -46,11 +46,11 @@ func (n *ServiceAdapter) GetLikes(ctx context.Context) (*client.Zones, error) {
 	zones := &client.Zones{}
 	resp, err := n.client.GetUserZones(ctx)
 	if err != nil {
-		return zones, fmt.Errorf("failed to get user likes: %s", err)
+		return zones, fmt.Errorf("failed to get user likes: %w", err)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(zones); err != nil {
-		return zones, fmt.Errorf("failed to decode user likes: %s", err)
+		return zones, fmt.Errorf("failed to decode user likes: %w", err)
 	}
 
 	return zones, nil
@@ -59,7 +59,7 @@ func (n *ServiceAdapter) GetLikes(ctx context.Context) (*client.Zones, error) {
 func (n *ServiceAdapter) LikeZone(ctx context.Context, userID int64, zoneID string) error {
 	resp, err := n.client.PostZonesZoneIDLikeUserID(ctx, zoneID, strconv.FormatInt(userID, 10))
 	if err != nil {
-		return fmt.Errorf("failed to like zone: %s", err)
+		return fmt.Errorf("failed to like zone: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -72,7 +72,7 @@ func (n *ServiceAdapter) LikeZone(ctx context.Context, userID int64, zoneID stri
 func (n *ServiceAdapter) UnlikeZone(ctx context.Context, userID int64, zoneID string) error {
 	resp, err := n.client.DeleteZonesZoneIDLikeUserID(ctx, zoneID, strconv.FormatInt(userID, 10))
 	if err != nil {
-		return fmt.Errorf("failed to unlike zone: %s", err)
+		return fmt.Errorf("failed to unlike zone: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {

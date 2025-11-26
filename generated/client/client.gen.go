@@ -4,6 +4,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,13 @@ const (
 	Undefined PropertyType = "Undefined"
 )
 
+// Defines values for Role.
+const (
+	Admin         Role = "Admin"
+	Analyser      Role = "Analyser"
+	UndefinedRole Role = "UndefinedRole"
+)
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -31,6 +39,9 @@ type Error struct {
 
 // PropertyType defines model for PropertyType.
 type PropertyType string
+
+// Role defines model for Role.
+type Role string
 
 // Zone defines model for Zone.
 type Zone struct {
@@ -49,6 +60,15 @@ type ZoneDetails struct {
 
 // Zones defines model for Zones.
 type Zones = []Zone
+
+// PostUserCreateUserIDJSONBody defines parameters for PostUserCreateUserID.
+type PostUserCreateUserIDJSONBody struct {
+	Role     string `json:"role"`
+	UserName string `json:"userName"`
+}
+
+// PostUserCreateUserIDJSONRequestBody defines body for PostUserCreateUserID for application/json ContentType.
+type PostUserCreateUserIDJSONRequestBody PostUserCreateUserIDJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -123,6 +143,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetUserAuthUserID request
+	GetUserAuthUserID(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostUserCreateUserIDWithBody request with any body
+	PostUserCreateUserIDWithBody(ctx context.Context, userID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostUserCreateUserID(ctx context.Context, userID string, body PostUserCreateUserIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUserZones request
 	GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -134,6 +162,42 @@ type ClientInterface interface {
 
 	// PostZonesZoneIDLikeUserID request
 	PostZonesZoneIDLikeUserID(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) GetUserAuthUserID(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserAuthUserIDRequest(c.Server, userID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostUserCreateUserIDWithBody(ctx context.Context, userID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostUserCreateUserIDRequestWithBody(c.Server, userID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostUserCreateUserID(ctx context.Context, userID string, body PostUserCreateUserIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostUserCreateUserIDRequest(c.Server, userID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -182,6 +246,87 @@ func (c *Client) PostZonesZoneIDLikeUserID(ctx context.Context, zoneID string, u
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetUserAuthUserIDRequest generates requests for GetUserAuthUserID
+func NewGetUserAuthUserIDRequest(server string, userID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "userID", runtime.ParamLocationPath, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/auth/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostUserCreateUserIDRequest calls the generic PostUserCreateUserID builder with application/json body
+func NewPostUserCreateUserIDRequest(server string, userID string, body PostUserCreateUserIDJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostUserCreateUserIDRequestWithBody(server, userID, "application/json", bodyReader)
+}
+
+// NewPostUserCreateUserIDRequestWithBody generates requests for PostUserCreateUserID with any type of body
+func NewPostUserCreateUserIDRequestWithBody(server string, userID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "userID", runtime.ParamLocationPath, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/create/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetUserZonesRequest generates requests for GetUserZones
@@ -370,6 +515,14 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetUserAuthUserIDWithResponse request
+	GetUserAuthUserIDWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*GetUserAuthUserIDResponse, error)
+
+	// PostUserCreateUserIDWithBodyWithResponse request with any body
+	PostUserCreateUserIDWithBodyWithResponse(ctx context.Context, userID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostUserCreateUserIDResponse, error)
+
+	PostUserCreateUserIDWithResponse(ctx context.Context, userID string, body PostUserCreateUserIDJSONRequestBody, reqEditors ...RequestEditorFn) (*PostUserCreateUserIDResponse, error)
+
 	// GetUserZonesWithResponse request
 	GetUserZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserZonesResponse, error)
 
@@ -381,6 +534,51 @@ type ClientWithResponsesInterface interface {
 
 	// PostZonesZoneIDLikeUserIDWithResponse request
 	PostZonesZoneIDLikeUserIDWithResponse(ctx context.Context, zoneID string, userID string, reqEditors ...RequestEditorFn) (*PostZonesZoneIDLikeUserIDResponse, error)
+}
+
+type GetUserAuthUserIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Role
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUserAuthUserIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUserAuthUserIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostUserCreateUserIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PostUserCreateUserIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostUserCreateUserIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetUserZonesResponse struct {
@@ -476,6 +674,32 @@ func (r PostZonesZoneIDLikeUserIDResponse) StatusCode() int {
 	return 0
 }
 
+// GetUserAuthUserIDWithResponse request returning *GetUserAuthUserIDResponse
+func (c *ClientWithResponses) GetUserAuthUserIDWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*GetUserAuthUserIDResponse, error) {
+	rsp, err := c.GetUserAuthUserID(ctx, userID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUserAuthUserIDResponse(rsp)
+}
+
+// PostUserCreateUserIDWithBodyWithResponse request with arbitrary body returning *PostUserCreateUserIDResponse
+func (c *ClientWithResponses) PostUserCreateUserIDWithBodyWithResponse(ctx context.Context, userID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostUserCreateUserIDResponse, error) {
+	rsp, err := c.PostUserCreateUserIDWithBody(ctx, userID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostUserCreateUserIDResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostUserCreateUserIDWithResponse(ctx context.Context, userID string, body PostUserCreateUserIDJSONRequestBody, reqEditors ...RequestEditorFn) (*PostUserCreateUserIDResponse, error) {
+	rsp, err := c.PostUserCreateUserID(ctx, userID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostUserCreateUserIDResponse(rsp)
+}
+
 // GetUserZonesWithResponse request returning *GetUserZonesResponse
 func (c *ClientWithResponses) GetUserZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserZonesResponse, error) {
 	rsp, err := c.GetUserZones(ctx, reqEditors...)
@@ -510,6 +734,65 @@ func (c *ClientWithResponses) PostZonesZoneIDLikeUserIDWithResponse(ctx context.
 		return nil, err
 	}
 	return ParsePostZonesZoneIDLikeUserIDResponse(rsp)
+}
+
+// ParseGetUserAuthUserIDResponse parses an HTTP response from a GetUserAuthUserIDWithResponse call
+func ParseGetUserAuthUserIDResponse(rsp *http.Response) (*GetUserAuthUserIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUserAuthUserIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Role
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostUserCreateUserIDResponse parses an HTTP response from a PostUserCreateUserIDWithResponse call
+func ParsePostUserCreateUserIDResponse(rsp *http.Response) (*PostUserCreateUserIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostUserCreateUserIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetUserZonesResponse parses an HTTP response from a GetUserZonesWithResponse call

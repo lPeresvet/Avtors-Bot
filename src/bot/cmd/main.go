@@ -33,12 +33,19 @@ func main() {
 		log.Fatal("ADDRESS environment variable is required")
 	}
 
-	nspd, err := adapter.NewAnalyseServiceAdapter(fmt.Sprintf("http://%s:%s", hostingAddress, portParam))
+	serviceHost := fmt.Sprintf("http://%s:%s", hostingAddress, portParam)
+
+	nspd, err := adapter.NewAnalyseServiceAdapter(serviceHost)
 	if err != nil {
 		log.Fatalf("Failed to create nspd client: %v", err)
 	}
 
-	bot, err := port.NewBot(botToken, nspd)
+	um, err := adapter.NewUMServiceAdapter(serviceHost)
+	if err != nil {
+		log.Fatalf("Failed to create um client: %v", err)
+	}
+
+	bot, err := port.NewBot(botToken, nspd, um)
 	if err != nil {
 		log.Fatal(err)
 	}
