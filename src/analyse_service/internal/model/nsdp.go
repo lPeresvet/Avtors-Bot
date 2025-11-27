@@ -4,7 +4,17 @@ type NSPDResp struct {
 	Data struct {
 		Type     string `json:"type"`
 		Features []struct {
-			Id         int `json:"id"`
+			Id       int `json:"id"`
+			Geometry struct {
+				Type        string        `json:"type"`
+				Coordinates [][][]float64 `json:"coordinates"`
+				Crs         struct {
+					Type       string `json:"type"`
+					Properties struct {
+						Name string `json:"name"`
+					} `json:"properties"`
+				} `json:"crs"`
+			} `json:"geometry"`
 			Properties struct {
 				CadastralDistrictsCode int    `json:"cadastralDistrictsCode"`
 				Category               int    `json:"category"`
@@ -57,4 +67,53 @@ type NSPDResp struct {
 	//	TotalCount int `json:"totalCount"`
 	//	CategoryId int `json:"categoryId"`
 	//} `json:"meta"`
+}
+
+type TerrZone struct {
+	Type     string `json:"type"`
+	Features []struct {
+		Id       int    `json:"id"`
+		Type     string `json:"type"`
+		Geometry struct {
+			Type        string        `json:"type"`
+			Coordinates [][][]float64 `json:"coordinates"`
+			Crs         struct {
+				Type       string `json:"type"`
+				Properties struct {
+					Name string `json:"name"`
+				} `json:"properties"`
+			} `json:"crs"`
+		} `json:"geometry"`
+		Properties struct {
+			CadastralDistrictsCode int    `json:"cadastralDistrictsCode"`
+			Category               int    `json:"category"`
+			CategoryName           string `json:"categoryName"`
+			Descr                  string `json:"descr"`
+			ExternalKey            string `json:"externalKey"`
+			InteractionId          int    `json:"interactionId"`
+			Label                  string `json:"label"`
+			Options                struct {
+				CadastralDistrict           string `json:"cadastral_district"`
+				ContentRestrictEncumbrances string `json:"content_restrict_encumbrances"`
+				LegalActDocumentDate        string `json:"legal_act_document_date"`
+				LegalActDocumentIssuer      string `json:"legal_act_document_issuer"`
+				LegalActDocumentName        string `json:"legal_act_document_name"`
+				LegalActDocumentNumber      string `json:"legal_act_document_number"`
+				NameByDoc                   string `json:"name_by_doc"` //TODO: use this
+				OldAccountNumber            string `json:"old_account_number"`
+				PermittedUsesName           string `json:"permitted_uses_name"`
+				RegNumbBorder               string `json:"reg_numb_border"`
+				RegistrationDate            string `json:"registration_date"`
+				TypeBoundaryValue           string `json:"type_boundary_value"`
+				TypeZone                    string `json:"type_zone"`
+			} `json:"options"`
+			Subcategory int `json:"subcategory"`
+			SystemInfo  struct {
+				Inserted   string `json:"inserted"`
+				InsertedBy string `json:"insertedBy"`
+				Updated    string `json:"updated"`
+				UpdatedBy  string `json:"updatedBy"`
+			} `json:"systemInfo"`
+		} `json:"properties"`
+	} `json:"features"`
 }

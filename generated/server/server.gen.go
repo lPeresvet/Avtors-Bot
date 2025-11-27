@@ -38,6 +38,15 @@ type PropertyType string
 // Role defines model for Role.
 type Role string
 
+// User defines model for User.
+type User struct {
+	Role     *Role   `json:"role,omitempty"`
+	Username *string `json:"username,omitempty"`
+}
+
+// Users defines model for Users.
+type Users = []User
+
 // Zone defines model for Zone.
 type Zone struct {
 	Id string `json:"id"`
@@ -45,12 +54,14 @@ type Zone struct {
 
 // ZoneDetails defines model for ZoneDetails.
 type ZoneDetails struct {
-	Address        *string      `json:"address,omitempty"`
-	Id             string       `json:"id"`
-	PermittedUsage string       `json:"permittedUsage"`
-	PropertyType   PropertyType `json:"propertyType"`
-	RightType      *string      `json:"rightType,omitempty"`
-	Square         *int         `json:"square,omitempty"`
+	Address         *string      `json:"address,omitempty"`
+	FunctionalZone  *string      `json:"functionalZone,omitempty"`
+	Id              string       `json:"id"`
+	PermittedUsage  string       `json:"permittedUsage"`
+	PropertyType    PropertyType `json:"propertyType"`
+	RightType       *string      `json:"rightType,omitempty"`
+	Square          *int         `json:"square,omitempty"`
+	TerritorialZone *string      `json:"territorialZone,omitempty"`
 }
 
 // Zones defines model for Zones.
@@ -76,6 +87,12 @@ type ServerInterface interface {
 	// Get favorite zones
 	// (GET /user/zones)
 	GetUserZones(ctx echo.Context) error
+	// Get list of users
+	// (GET /users)
+	GetUsers(ctx echo.Context) error
+
+	// (DELETE /users/{userID})
+	DeleteUsersUserID(ctx echo.Context, userID string) error
 	// Get zone analyses info
 	// (GET /zones/{zoneID}/analise)
 	GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error
@@ -130,6 +147,31 @@ func (w *ServerInterfaceWrapper) GetUserZones(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetUserZones(ctx)
+	return err
+}
+
+// GetUsers converts echo context to params.
+func (w *ServerInterfaceWrapper) GetUsers(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetUsers(ctx)
+	return err
+}
+
+// DeleteUsersUserID converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteUsersUserID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "userID" -------------
+	var userID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userID", ctx.Param("userID"), &userID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter userID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteUsersUserID(ctx, userID)
 	return err
 }
 
@@ -228,6 +270,8 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/user/auth/:userID", wrapper.GetUserAuthUserID)
 	router.POST(baseURL+"/user/create/:userID", wrapper.PostUserCreateUserID)
 	router.GET(baseURL+"/user/zones", wrapper.GetUserZones)
+	router.GET(baseURL+"/users", wrapper.GetUsers)
+	router.DELETE(baseURL+"/users/:userID", wrapper.DeleteUsersUserID)
 	router.GET(baseURL+"/zones/:zoneID/analise", wrapper.GetZonesZoneIDAnalise)
 	router.DELETE(baseURL+"/zones/:zoneID/like/:userID", wrapper.DeleteZonesZoneIDLikeUserID)
 	router.POST(baseURL+"/zones/:zoneID/like/:userID", wrapper.PostZonesZoneIDLikeUserID)

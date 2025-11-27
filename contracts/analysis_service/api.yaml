@@ -167,6 +167,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /users:
+    get:
+      summary: Get list of users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Users'
+        '500':
+          description: Failed to get users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users/{userID}:
+    delete:
+      parameters:
+        - name: userID
+          in: path
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+      responses:
+        '202':
+          description: User deleted
+        '500':
+          description: Failed to create user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -189,6 +223,10 @@ components:
           type: string
         square:
           type: integer
+        territorialZone:
+          type: string
+        functionalZone:
+          type: string
     Zone:
       type: object
       required:
@@ -206,6 +244,17 @@ components:
         - Admin
         - Analyser
         - UndefinedRole
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+    Users:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
     PropertyType:
       type: string
       enum:

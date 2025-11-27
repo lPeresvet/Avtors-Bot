@@ -16,25 +16,33 @@ type NSPDClient interface {
 	GetZoneDetails(ctx context.Context, zoneID string) (*model.NSPDResp, error)
 }
 
+type SubZonesService interface {
+	GetZones(ctx context.Context, coords [][]float64) (*model.ZonesAnalysis, error)
+}
+
 type Repository interface {
 	InsertLike(like model.Like) error
 	DeleteLike(like model.Like) error
 	GetLikes() (*server.Zones, error)
 	GetUserRole(username string) (*model.Role, error)
 	CreateUser(username, role string) error
+	GetUsers() (*server.Users, error)
+	DeleteUser(username string) error
 }
 
 type AnalyseService struct {
 	ctx        context.Context
 	nspdClient NSPDClient
 	repo       Repository
+	subZones   SubZonesService
 }
 
-func NewAnalyseService(ctx context.Context, nspdClient NSPDClient, repository Repository) *AnalyseService {
+func NewAnalyseService(ctx context.Context, nspdClient NSPDClient, repository Repository, subZones SubZonesService) *AnalyseService {
 	return &AnalyseService{
 		ctx:        ctx,
 		nspdClient: nspdClient,
 		repo:       repository,
+		subZones:   subZones,
 	}
 }
 
@@ -68,7 +76,7 @@ func (svc *AnalyseService) DeleteZonesZoneIDLikeUserID(ctx echo.Context, zoneID 
 
 func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string) error {
 	//TODO: add zone id validation and normal logs
-	timeoutCtx, cancel := context.WithTimeout(svc.ctx, 5*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(svc.ctx, 20*time.Second)
 	defer cancel()
 
 	details, err := svc.nspdClient.GetZoneDetails(timeoutCtx, zoneID)
@@ -81,13 +89,25 @@ func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string
 		})
 	}
 
+	zones, err := svc.subZones.GetZones(timeoutCtx, details.Data.Features[0].Geometry.Coordinates[0])
+	if err != nil {
+		log.Printf("GetSubZoneDetails: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get sub zone details",
+		})
+	}
+
 	serviceResponse := &server.ZoneDetails{
-		Id:             zoneID,
-		PermittedUsage: details.Data.Features[0].Properties.Options.PermittedUseEstablishedByDocument,
-		PropertyType:   ConvertOwnershipType(details.Data.Features[0].Properties.Options.OwnershipType),
-		RightType:      &details.Data.Features[0].Properties.Options.RightType,
-		Square:         &details.Data.Features[0].Properties.Options.LandRecordAreaVerified,
-		Address:        &details.Data.Features[0].Properties.Options.ReadableAddress,
+		Id:              zoneID,
+		PermittedUsage:  details.Data.Features[0].Properties.Options.PermittedUseEstablishedByDocument,
+		PropertyType:    ConvertOwnershipType(details.Data.Features[0].Properties.Options.OwnershipType),
+		RightType:       &details.Data.Features[0].Properties.Options.RightType,
+		Square:          &details.Data.Features[0].Properties.Options.LandRecordAreaVerified,
+		Address:         &details.Data.Features[0].Properties.Options.ReadableAddress,
+		FunctionalZone:  &zones.FunctionalZoneName,
+		TerritorialZone: &zones.TerrZoneName,
 	}
 
 	return ctx.JSON(http.StatusOK, serviceResponse)
@@ -139,4 +159,25 @@ func (svc *AnalyseService) PostUserCreateUserID(ctx echo.Context, _ string) erro
 	}
 
 	return ctx.JSON(http.StatusCreated, nil)
+}
+
+func (svc *AnalyseService) GetUsers(ctx echo.Context) error {
+	users, err := svc.repo.GetUsers()
+	if err != nil {
+		log.Printf("GetUsers error: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to get users"})
+	}
+
+	return ctx.JSON(http.StatusOK, users)
+}
+
+func (svc *AnalyseService) DeleteUsersUserID(ctx echo.Context, userID string) error {
+	if err := svc.repo.DeleteUser(userID); err != nil {
+		log.Printf("GetUsers error: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to delete users"})
+	}
+
+	return ctx.JSON(http.StatusAccepted, nil)
 }
