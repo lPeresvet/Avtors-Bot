@@ -50,6 +50,8 @@ type AnalyseService interface {
 type UserService interface {
 	CreateUser(ctx context.Context, username, role string) error
 	GetUserRole(ctx context.Context, username string) (string, error)
+	GetUsers(ctx context.Context) (*client.Users, error)
+	DeleteUser(ctx context.Context, username string) error
 }
 
 func NewBot(token string, analyseService AnalyseService, umService UserService) (*Bot, error) {
@@ -157,6 +159,37 @@ func (b *Bot) handleQuery(ctx context.Context, chatID int64, username string, ca
 
 		b.setUserState(chatID, CreateUserState)
 		msgs = append(msgs, tgbotapi.NewMessage(chatID, outText))
+	case AllUsersData:
+		users, err := b.userService.GetUsers(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get likes: %v", err)
+		}
+
+		for _, user := range *users {
+			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Имя пользователя: @%s\nРоль: %s", *user.Username, *user.Role))
+			msg.ReplyMarkup = GetUserMenuKeyboard(*user.Username)
+
+			msgs = append(msgs, msg)
+		}
+
+		msg := tgbotapi.NewMessage(chatID, "Меню:")
+
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
+		msgs = append(msgs, msg)
+	case DeleteUserData:
+		outText := "Пользователь успешно удален ✅"
+
+		if err := b.userService.DeleteUser(ctx, callbackPayload); err != nil {
+			outText = "Не удалось удалить пользователя😔"
+
+			log.Printf("failed to delete user: %v", err)
+		}
+
+		msg := tgbotapi.NewMessage(chatID, outText)
+		msg.ReplyMarkup = b.GetMainMenuBasedOnRole(chatID)
+
+		msgs = append(msgs, msg)
+
 	case LikedListData:
 		likes, err := b.analyseService.GetLikes(ctx)
 		if err != nil {

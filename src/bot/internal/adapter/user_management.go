@@ -57,3 +57,34 @@ func (um *UMAdapter) CreateUser(ctx context.Context, username, role string) erro
 
 	return nil
 }
+
+func (um *UMAdapter) GetUsers(ctx context.Context) (*client.Users, error) {
+	resp, err := um.client.GetUsers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get users: invalid status code: %d", resp.StatusCode)
+	}
+
+	users := &client.Users{}
+	if err := json.NewDecoder(resp.Body).Decode(users); err != nil {
+		return nil, fmt.Errorf("failed to decode users: %w", err)
+	}
+
+	return users, nil
+}
+
+func (um *UMAdapter) DeleteUser(ctx context.Context, username string) error {
+	resp, err := um.client.DeleteUsersUserID(ctx, username)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("failed to delete user: invalid status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}

@@ -43,6 +43,15 @@ type PropertyType string
 // Role defines model for Role.
 type Role string
 
+// User defines model for User.
+type User struct {
+	Role     *Role   `json:"role,omitempty"`
+	Username *string `json:"username,omitempty"`
+}
+
+// Users defines model for Users.
+type Users = []User
+
 // Zone defines model for Zone.
 type Zone struct {
 	Id string `json:"id"`
@@ -154,6 +163,12 @@ type ClientInterface interface {
 	// GetUserZones request
 	GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetUsers request
+	GetUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteUsersUserID request
+	DeleteUsersUserID(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetZonesZoneIDAnalise request
 	GetZonesZoneIDAnalise(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -202,6 +217,30 @@ func (c *Client) PostUserCreateUserID(ctx context.Context, userID string, body P
 
 func (c *Client) GetUserZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetUserZonesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUsersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteUsersUserID(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteUsersUserIDRequest(c.Server, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -349,6 +388,67 @@ func NewGetUserZonesRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetUsersRequest generates requests for GetUsers
+func NewGetUsersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteUsersUserIDRequest generates requests for DeleteUsersUserID
+func NewDeleteUsersUserIDRequest(server string, userID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "userID", runtime.ParamLocationPath, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -526,6 +626,12 @@ type ClientWithResponsesInterface interface {
 	// GetUserZonesWithResponse request
 	GetUserZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUserZonesResponse, error)
 
+	// GetUsersWithResponse request
+	GetUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUsersResponse, error)
+
+	// DeleteUsersUserIDWithResponse request
+	DeleteUsersUserIDWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*DeleteUsersUserIDResponse, error)
+
 	// GetZonesZoneIDAnaliseWithResponse request
 	GetZonesZoneIDAnaliseWithResponse(ctx context.Context, zoneID string, reqEditors ...RequestEditorFn) (*GetZonesZoneIDAnaliseResponse, error)
 
@@ -598,6 +704,51 @@ func (r GetUserZonesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetUserZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Users
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteUsersUserIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteUsersUserIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteUsersUserIDResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -707,6 +858,24 @@ func (c *ClientWithResponses) GetUserZonesWithResponse(ctx context.Context, reqE
 		return nil, err
 	}
 	return ParseGetUserZonesResponse(rsp)
+}
+
+// GetUsersWithResponse request returning *GetUsersResponse
+func (c *ClientWithResponses) GetUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetUsersResponse, error) {
+	rsp, err := c.GetUsers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUsersResponse(rsp)
+}
+
+// DeleteUsersUserIDWithResponse request returning *DeleteUsersUserIDResponse
+func (c *ClientWithResponses) DeleteUsersUserIDWithResponse(ctx context.Context, userID string, reqEditors ...RequestEditorFn) (*DeleteUsersUserIDResponse, error) {
+	rsp, err := c.DeleteUsersUserID(ctx, userID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteUsersUserIDResponse(rsp)
 }
 
 // GetZonesZoneIDAnaliseWithResponse request returning *GetZonesZoneIDAnaliseResponse
@@ -822,6 +991,65 @@ func ParseGetUserZonesResponse(rsp *http.Response) (*GetUserZonesResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUsersResponse parses an HTTP response from a GetUsersWithResponse call
+func ParseGetUsersResponse(rsp *http.Response) (*GetUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Users
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteUsersUserIDResponse parses an HTTP response from a DeleteUsersUserIDWithResponse call
+func ParseDeleteUsersUserIDResponse(rsp *http.Response) (*DeleteUsersUserIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteUsersUserIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 

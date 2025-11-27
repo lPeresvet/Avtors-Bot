@@ -187,3 +187,37 @@ func (r *Repository) CreateUser(username, role string) error {
 
 	return tx.Commit()
 }
+
+func (r *Repository) GetUsers() (*server.Users, error) {
+	rows, err := r.db.Query("SELECT user_name, user_role FROM users")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query uesrs: %w", err)
+	}
+
+	defer rows.Close()
+
+	users := make(server.Users, 0)
+
+	for rows.Next() {
+		var user server.User
+		err := rows.Scan(
+			&user.Username,
+			&user.Role,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse user: %w", err)
+		}
+
+		users = append(users, user)
+	}
+
+	return &users, nil
+}
+
+func (r *Repository) DeleteUser(username string) error {
+	if _, err := r.db.Query("DELETE FROM users WHERE user_name = $1", username); err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	return nil
+}

@@ -13,6 +13,8 @@ var (
 	LikeData       CallbackData = "like"
 	UnlikeData     CallbackData = "unlike"
 	CreateUserData CallbackData = "createUser"
+	AllUsersData   CallbackData = "allUsers"
+	DeleteUserData CallbackData = "deleteUser"
 )
 
 func (c *CallbackData) String() string {
@@ -28,9 +30,11 @@ var (
 	)
 	umRow = tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("Добавить пользователя", CreateUserData.String()),
+		tgbotapi.NewInlineKeyboardButtonData("Список пользователей", AllUsersData.String()),
 	)
 	noAuth = tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Вы не авторизованы", "/start"))
+		tgbotapi.NewInlineKeyboardButtonData("Вы не авторизованы", "/start"),
+	)
 )
 
 var MainMenuNoAuthKeyboard = tgbotapi.NewInlineKeyboardMarkup(
@@ -62,6 +66,14 @@ func GetLikedZoneMenuKeyboard(zoneID string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Удалить из избранного ❌️", fmt.Sprintf("%s+%s", UnlikeData.String(), zoneID)),
+		),
+	)
+}
+
+func GetUserMenuKeyboard(userID string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Удалить пользователя ❌️", fmt.Sprintf("%s+%s", DeleteUserData.String(), userID)),
 		),
 	)
 }

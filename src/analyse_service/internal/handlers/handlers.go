@@ -22,6 +22,8 @@ type Repository interface {
 	GetLikes() (*server.Zones, error)
 	GetUserRole(username string) (*model.Role, error)
 	CreateUser(username, role string) error
+	GetUsers() (*server.Users, error)
+	DeleteUser(username string) error
 }
 
 type AnalyseService struct {
@@ -139,4 +141,25 @@ func (svc *AnalyseService) PostUserCreateUserID(ctx echo.Context, _ string) erro
 	}
 
 	return ctx.JSON(http.StatusCreated, nil)
+}
+
+func (svc *AnalyseService) GetUsers(ctx echo.Context) error {
+	users, err := svc.repo.GetUsers()
+	if err != nil {
+		log.Printf("GetUsers error: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to get users"})
+	}
+
+	return ctx.JSON(http.StatusOK, users)
+}
+
+func (svc *AnalyseService) DeleteUsersUserID(ctx echo.Context, userID string) error {
+	if err := svc.repo.DeleteUser(userID); err != nil {
+		log.Printf("GetUsers error: %v", err)
+
+		return ctx.JSON(http.StatusInternalServerError, server.Error{Code: http.StatusInternalServerError, Message: "Failed to delete users"})
+	}
+
+	return ctx.JSON(http.StatusAccepted, nil)
 }
