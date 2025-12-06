@@ -4,6 +4,8 @@ import (
 	"avtor.ru/bot/analyse_service/internal/model"
 	"context"
 	"fmt"
+	"strconv"
+	//"strconv"
 )
 
 const (
@@ -20,13 +22,20 @@ type NSPDClient interface {
 	GetTerrZone(ctx context.Context, zone *model.LayerInfoCoords) (*model.TerrZone, error)
 }
 
-type ZonesUseCase struct {
-	nspdClient NSPDClient
+type GisKznClient interface {
+	GetZoneID(ctx context.Context, zone *model.LayerInfoCoords) (*model.GisKznZoneIDResp, error)
+	GetFuncZoneDetails(zoneID string) (*model.FuncZoneDetailsInfo, error)
 }
 
-func NewZonesUseCase(nspdClient NSPDClient) *ZonesUseCase {
+type ZonesUseCase struct {
+	nspdClient   NSPDClient
+	gisKznClient GisKznClient
+}
+
+func NewZonesUseCase(nspdClient NSPDClient, gisKznClient GisKznClient) *ZonesUseCase {
 	return &ZonesUseCase{
-		nspdClient: nspdClient,
+		nspdClient:   nspdClient,
+		gisKznClient: gisKznClient,
 	}
 }
 
@@ -36,7 +45,7 @@ func (uc *ZonesUseCase) GetZones(ctx context.Context, coords [][]float64) (*mode
 	}
 	outCoords := outerBorder(coords[0 : len(coords)-1])
 
-	zone, err := uc.nspdClient.GetTerrZone(ctx, &model.LayerInfoCoords{
+	zones := &model.LayerInfoCoords{
 		Bbox: []model.Coords{
 			{
 				X: coords[min][x],
@@ -48,13 +57,26 @@ func (uc *ZonesUseCase) GetZones(ctx context.Context, coords [][]float64) (*mode
 			},
 		},
 		Coords: getSubCoors(outCoords, coords[0]),
-	})
+	}
+
+	zone, err := uc.nspdClient.GetTerrZone(ctx, zones)
 	if err != nil {
 		return nil, err
 	}
 
+	funcZoneID, err := uc.gisKznClient.GetZoneID(ctx, zones)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get functional zone id: %w", err)
+	}
+
+	funcZoneName, err := uc.gisKznClient.GetFuncZoneDetails(strconv.FormatInt(funcZoneID.Features[0].Properties.Key, 10))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get func zone name: %w", err)
+	}
+
 	return &model.ZonesAnalysis{
-		TerrZoneName: zone.Features[0].Properties.Options.NameByDoc,
+		TerrZoneName:       zone.Features[0].Properties.Options.NameByDoc,
+		FunctionalZoneName: funcZoneName.Title,
 	}, nil
 }
 

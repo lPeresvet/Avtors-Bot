@@ -16,6 +16,7 @@ type Container struct {
 	Echo *echo.Echo
 
 	NSPDClient   *client.NSDPClient
+	GisKznClient *client.GisKznClient
 	Server       server.ServerInterface
 	Repository   *repository.Repository
 	ZonesUseCase *usecase.ZonesUseCase
@@ -43,6 +44,14 @@ func (c *Container) GetNSPDClient() *client.NSDPClient {
 	return c.NSPDClient
 }
 
+func (c *Container) GetGisKznClient() *client.GisKznClient {
+	if c.GisKznClient == nil {
+		c.GisKznClient = client.NewGisKznClient()
+	}
+
+	return c.GisKznClient
+}
+
 func (c *Container) GetService() (server.ServerInterface, error) {
 	if c.Server == nil {
 		repo, err := c.GetRepository()
@@ -58,7 +67,7 @@ func (c *Container) GetService() (server.ServerInterface, error) {
 
 func (c *Container) GetSubZonesService() *usecase.ZonesUseCase {
 	if c.ZonesUseCase == nil {
-		c.ZonesUseCase = usecase.NewZonesUseCase(c.GetNSPDClient())
+		c.ZonesUseCase = usecase.NewZonesUseCase(c.GetNSPDClient(), c.GetGisKznClient())
 	}
 
 	return c.ZonesUseCase

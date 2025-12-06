@@ -34,6 +34,9 @@ func (n *ServiceAdapter) Analyse(ctx context.Context, zoneID string) (*client.Zo
 		return &client.ZoneDetails{}, fmt.Errorf("failed to get zone analise: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return &client.ZoneDetails{}, fmt.Errorf("failed to get resp: %s", resp.Status)
+	}
 	zoneInfo := &client.ZoneDetails{}
 	if err := json.NewDecoder(resp.Body).Decode(zoneInfo); err != nil {
 		return &client.ZoneDetails{}, fmt.Errorf("failed to decode zone info: %w", err)

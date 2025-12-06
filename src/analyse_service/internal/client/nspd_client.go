@@ -22,7 +22,7 @@ type NSDPClient struct {
 
 func NewNSDPClient() *NSDPClient {
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	return &NSDPClient{
