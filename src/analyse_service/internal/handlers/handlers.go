@@ -108,6 +108,7 @@ func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string
 		Address:         &details.Data.Features[0].Properties.Options.ReadableAddress,
 		FunctionalZone:  &zones.FunctionalZoneName,
 		TerritorialZone: &zones.TerrZoneName,
+		ZoneOK:          &zones.ConstructionPermitted,
 	}
 
 	return ctx.JSON(http.StatusOK, serviceResponse)

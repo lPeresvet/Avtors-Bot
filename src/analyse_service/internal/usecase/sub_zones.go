@@ -4,8 +4,9 @@ import (
 	"avtor.ru/bot/analyse_service/internal/model"
 	"context"
 	"fmt"
+	"log"
 	"strconv"
-	//"strconv"
+	"strings"
 )
 
 const (
@@ -16,6 +17,31 @@ const (
 	max = 1
 
 	bboxSize = 512 //TODO maybe increase
+)
+
+var (
+	permittedFuncZones = map[string]bool{
+		"120": true,
+		"123": true,
+		"124": true,
+		"200": true,
+		"202": true,
+		"203": true,
+		"204": true,
+		"210": true,
+		"230": true,
+		"320": true,
+	}
+
+	permittedTerrZones = map[string]bool{
+		"Зона индивидуальной жилой застройки в границах многоквартирной застройки": true,
+		"Зона малоэтажной жилой застройки":                                         true,
+		"Зона среднеэтажной жилой застройки":                                       true,
+		"Зона многоэтажной жилой застройки":                                        true,
+		"Зона смешанной жилой и общественной застройки":                            true,
+		"Зона смешанной застройки центра города":                                   true,
+		"Зона фактического использования территории":                               true,
+	}
 )
 
 type NSPDClient interface {
@@ -74,9 +100,17 @@ func (uc *ZonesUseCase) GetZones(ctx context.Context, coords [][]float64) (*mode
 		return nil, fmt.Errorf("failed to get func zone name: %w", err)
 	}
 
+	code, err := funcZoneName.GetZoneCode()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get func zone code: %w", err)
+	}
+
+	terrZoneName := zone.Features[0].Properties.Options.NameByDoc
+
 	return &model.ZonesAnalysis{
-		TerrZoneName:       zone.Features[0].Properties.Options.NameByDoc,
-		FunctionalZoneName: funcZoneName.Title,
+		TerrZoneName:          terrZoneName,
+		FunctionalZoneName:    funcZoneName.Title,
+		ConstructionPermitted: isConstructionPermitted(code, terrZoneName),
 	}, nil
 }
 
@@ -117,4 +151,29 @@ func getSubCoors(borders [][]float64, point []float64) model.CoordsInt {
 		X: int(xInterval * pointX),
 		Y: int(yInterval * pointY),
 	}
+}
+
+func isConstructionPermitted(funcZoneCode, terrZoneCode string) bool {
+	return isFuncZonePermitted(funcZoneCode) && isTerrZonePermitted(terrZoneCode)
+}
+
+func isFuncZonePermitted(funcZoneCode string) bool {
+	log.Printf("isFuncZonePermitted(%s)", funcZoneCode)
+
+	return permittedFuncZones[funcZoneCode]
+}
+
+func isTerrZonePermitted(terrZoneCode string) bool {
+	log.Printf("isTerrZonePermitted(%s)", terrZoneCode)
+
+	result := false
+	for zone, _ := range permittedTerrZones {
+		if strings.Contains(terrZoneCode, zone) {
+			result = true
+
+			break
+		}
+	}
+
+	return result
 }

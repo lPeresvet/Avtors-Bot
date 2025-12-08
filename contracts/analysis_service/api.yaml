@@ -227,6 +227,8 @@ components:
           type: string
         functionalZone:
           type: string
+        zoneOK:
+          type: boolean
     Zone:
       type: object
       required:

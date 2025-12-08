@@ -1,5 +1,9 @@
 package model
 
+import (
+	"errors"
+)
+
 type GisKznZoneIDResp struct {
 	Type          string `json:"type"`
 	TotalFeatures string `json:"totalFeatures"`
@@ -29,4 +33,16 @@ type FuncZoneDetailsInfo struct {
 	Images    []interface{} `json:"images"`
 	FilesInfo []interface{} `json:"filesInfo"`
 	Comments  []interface{} `json:"comments"`
+}
+
+func (info *FuncZoneDetailsInfo) GetZoneCode() (string, error) {
+	for _, groupField := range info.GroupsFields {
+		for _, field := range groupField.Fields {
+			if field.Name == "Иной параметр и его единицы измерения" {
+				return field.Value, nil
+			}
+		}
+	}
+
+	return "", errors.New("no zone code found")
 }

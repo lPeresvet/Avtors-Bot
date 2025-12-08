@@ -16,6 +16,7 @@ type LayerInfoCoords struct {
 }
 
 type ZonesAnalysis struct {
-	FunctionalZoneName string
-	TerrZoneName       string
+	FunctionalZoneName    string
+	TerrZoneName          string
+	ConstructionPermitted bool
 }

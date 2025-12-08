@@ -31,6 +31,7 @@ func NewNSDPClient() *NSDPClient {
 }
 
 func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.NSPDResp, error) {
+
 	req, err := http.NewRequest("GET", fmt.Sprintf(requestURL, zoneID), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new request: %w", err)

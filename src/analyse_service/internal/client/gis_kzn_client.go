@@ -31,7 +31,13 @@ func NewGisKznClient() *GisKznClient {
 }
 
 func (c *GisKznClient) GetZoneID(ctx context.Context, zone *model.LayerInfoCoords) (*model.GisKznZoneIDResp, error) {
-	resultReq := fmt.Sprintf(zoneIdURL, zone.Bbox[1].X, zone.Bbox[1].Y, zone.Bbox[0].X, zone.Bbox[0].Y, zone.Coords.X, zone.Coords.Y)
+
+	resultReq := fmt.Sprintf(zoneIdURL,
+		min(zone.Bbox[0].X, zone.Bbox[1].X),
+		min(zone.Bbox[0].Y, zone.Bbox[1].Y),
+		max(zone.Bbox[0].X, zone.Bbox[1].X),
+		max(zone.Bbox[0].Y, zone.Bbox[1].Y),
+		zone.Coords.X, zone.Coords.Y)
 
 	log.Printf("Requesting: %s", resultReq)
 	req, err := http.NewRequest("GET", resultReq, nil)
@@ -98,4 +104,20 @@ func (c *GisKznClient) GetFuncZoneDetails(zoneID string) (*model.FuncZoneDetails
 	}
 
 	return details, nil
+}
+
+func min(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+
+	return b
+}
+
+func max(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+
+	return b
 }

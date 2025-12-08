@@ -62,6 +62,7 @@ type ZoneDetails struct {
 	RightType       *string      `json:"rightType,omitempty"`
 	Square          *int         `json:"square,omitempty"`
 	TerritorialZone *string      `json:"territorialZone,omitempty"`
+	ZoneOK          *bool        `json:"zoneOK,omitempty"`
 }
 
 // Zones defines model for Zones.
