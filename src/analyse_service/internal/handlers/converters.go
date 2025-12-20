@@ -10,6 +10,7 @@ var (
 	converter = map[string]server.PropertyType{
 		"частная":       server.Private,
 		"муниципальная": server.Municipal,
+		"государственная федеральная": server.State,
 	}
 
 	userConverter = map[model.Role]server.Role{

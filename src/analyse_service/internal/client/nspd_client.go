@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -31,7 +32,7 @@ func NewNSDPClient() *NSDPClient {
 }
 
 func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.NSPDResp, error) {
-
+	log.Printf("GetZoneDetails: %s", fmt.Sprintf(requestURL, zoneID))
 	req, err := http.NewRequest("GET", fmt.Sprintf(requestURL, zoneID), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new request: %w", err)
@@ -65,6 +66,7 @@ func (c *NSDPClient) GetZoneDetails(ctx context.Context, zoneID string) (*model.
 }
 
 func (c *NSDPClient) GetTerrZone(ctx context.Context, zone *model.LayerInfoCoords) (*model.TerrZone, error) {
+	log.Printf("GetTerrZone: %s", fmt.Sprintf(terrZoneURL, zone.Coords.X, zone.Coords.Y, zone.Bbox[0].X, zone.Bbox[0].Y, zone.Bbox[1].X, zone.Bbox[1].Y))
 	req, err := http.NewRequest("GET", fmt.Sprintf(terrZoneURL, zone.Coords.X, zone.Coords.Y, zone.Bbox[0].X, zone.Bbox[0].Y, zone.Bbox[1].X, zone.Bbox[1].Y), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new request: %w", err)

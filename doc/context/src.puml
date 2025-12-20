@@ -8,11 +8,15 @@ Person(user, "User", "A person who analyzes cadastral zones")
 
 System(tg_bot, "TG bot", "Allows user to send queries")
 System(search_service, "Search service", "Search and analyse info in cadastral services")
+System(um_service, "User Management service", "Menages users")
 
 System_Ext(nspd, "NSPD", "Stores official info abot cadastral zones")
+System_Ext(giskzn, "GIS KZN", "Stores official info abot cadastral zones")
 
 
 Rel(user, tg_bot, "chats")
 Rel_R(tg_bot, search_service, "qeury by id")
-Rel(search_service, nspd, "qeury by id")
+Rel_R(tg_bot, um_service, "qeury by username")
+Rel(search_service, nspd, "qeury by id and coords")
+Rel(search_service, giskzn, "qeury by coords")
 @enduml

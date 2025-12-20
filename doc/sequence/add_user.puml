@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor User
+
+== Add user by privileged one ==
+
+User -> TG_bot: Add new user
+TG_bot -> user_service: Request user add
+user_service --> TG_bot: Add user result
+TG_bot --> User: User add result
+
+@enduml

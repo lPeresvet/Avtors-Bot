@@ -11,6 +11,9 @@ User -> TG_bot: Send zone ID
 TG_bot -> zones_service: Request analysis info
 zones_service -> NSPD_service: Search info by zone ID
 NSPD_service --> zones_service: Zone info
+zones_service -> zones_service: Get zone coords
+zones_service -> GIS_KZN_service: Search func zone by coords
+GIS_KZN_service --> zones_service: Func zone info
 zones_service --> TG_bot: Analysis info
 TG_bot --> User: Zone info
 

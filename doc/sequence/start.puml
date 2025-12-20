@@ -7,7 +7,13 @@ actor User
 == Start bot ==
 
 User -> TG_bot: Start Request (/start)
-TG_bot -> TG_bot: Auth user (optional)
-TG_bot --> User: Rules Response
+TG_bot -> user_service: Request user roles
+alt user found
+user_service --> TG_bot: User roles list
+TG_bot --> User: Menu
+else user not found
+user_service --> TG_bot: Empty response
+TG_bot --> User: User not auth message
+end
 
 @enduml

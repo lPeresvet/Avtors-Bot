@@ -31,7 +31,6 @@ func NewGisKznClient() *GisKznClient {
 }
 
 func (c *GisKznClient) GetZoneID(ctx context.Context, zone *model.LayerInfoCoords) (*model.GisKznZoneIDResp, error) {
-
 	resultReq := fmt.Sprintf(zoneIdURL,
 		min(zone.Bbox[0].X, zone.Bbox[1].X),
 		min(zone.Bbox[0].Y, zone.Bbox[1].Y),

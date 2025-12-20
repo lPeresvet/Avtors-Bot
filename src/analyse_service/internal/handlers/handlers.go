@@ -89,6 +89,13 @@ func (svc *AnalyseService) GetZonesZoneIDAnalise(ctx echo.Context, zoneID string
 		})
 	}
 
+	if len(details.Data.Features) < 1 {
+		return ctx.JSON(http.StatusInternalServerError, server.Error{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get sub zone details",
+		})
+	}
+
 	zones, err := svc.subZones.GetZones(timeoutCtx, details.Data.Features[0].Geometry.Coordinates[0])
 	if err != nil {
 		log.Printf("GetSubZoneDetails: %v", err)

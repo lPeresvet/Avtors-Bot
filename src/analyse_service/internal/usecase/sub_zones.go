@@ -20,6 +20,11 @@ const (
 )
 
 var (
+	failedToGetZone = "Зона неизвестна"
+	falseVal        = false
+)
+
+var (
 	permittedFuncZones = map[string]bool{
 		"120": true,
 		"123": true,
@@ -93,6 +98,14 @@ func (uc *ZonesUseCase) GetZones(ctx context.Context, coords [][]float64) (*mode
 	funcZoneID, err := uc.gisKznClient.GetZoneID(ctx, zones)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get functional zone id: %w", err)
+	}
+
+	if len(funcZoneID.Features) < 1 {
+		return &model.ZonesAnalysis{
+			TerrZoneName:          failedToGetZone,
+			FunctionalZoneName:    failedToGetZone,
+			ConstructionPermitted: false,
+		}, nil
 	}
 
 	funcZoneName, err := uc.gisKznClient.GetFuncZoneDetails(strconv.FormatInt(funcZoneID.Features[0].Properties.Key, 10))
